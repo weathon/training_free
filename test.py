@@ -50,8 +50,8 @@ for block in pipe.transformer.transformer_blocks:
     block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=indices) #here start_index + 1, end_index, because exclude the *
     # block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=torch.tensor([index])) 
 frames = pipe(prompt,
-              negative_prompt="A non-animal object being standing out, with its colour or texture contrast against the background such that it is highly visible. The object is motionless or violent moving.",
-              num_inference_steps=10,
+              negative_prompt="A non-animal object being standing out, with its colour or texture contrast against the background such that it is highly visible.",
+              num_inference_steps=30,
               guidance_scale=9,
               num_frames=60).frames[0]
 
@@ -69,13 +69,13 @@ extracted_negative_maps = []
 
 maps = pipe.attention_maps  
 for step in range(max(len(maps) - 10, 0), len(maps)):
-    for layer in range(len(maps[step])):
+    for layer in range(len(maps[step])): 
         print(maps[step][layer].shape)# [B, H, Q, K]
         map = maps[step][layer][0].mean(0)[positive_mask==1].mean(0)
         print(maps[step][layer][0].mean(0)[positive_mask==1].shape) # need to use bool!
         extracted_positive_maps.append(map.cpu().float().numpy().reshape(-1, frames[0].size[1]//16, frames[0].size[0]//16))
         
-        map = maps[step][layer][0].mean(0)[negative_mask].mean(0)
+        map = maps[step][layer][0].mean(0)[negative_mask==1].mean(0)
         extracted_negative_maps.append(map.cpu().float().numpy().reshape(-1, frames[0].size[1]//16, frames[0].size[0]//16))
         
 extracted_positive_maps = np.array(extracted_positive_maps)
@@ -140,9 +140,11 @@ mean_neg_map = resize(mean_neg_map, size=(frames[0].size[0], frames[0].size[1]))
 
 mean_pos_map = normalize(mean_pos_map)
 mean_neg_map = normalize(mean_neg_map)
-video = repeat_maps(mean_pos_map, len(frames))
+# video = repeat_maps(mean_pos_map, len(frames))
+video = compose_frames(frames, mean_pos_map)
 export_to_video(video, f"res/mochi_pos_{file_id:02d}_map.mp4", fps=30)
-video = repeat_maps(mean_neg_map, len(frames))
+# video = repeat_maps(mean_neg_map, len(frames))
+video = compose_frames(frames, mean_neg_map)
 export_to_video(video, f"res/mochi_neg_{file_id:02d}_map.mp4", fps=30)
 
 with open("file_id.txt", "w") as f:
