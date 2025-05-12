@@ -40,8 +40,8 @@ print(tokenizer.tokenize(prompt))
 
 indices = torch.tensor(list(range(positive_start_index + 1, positive_end_index)) + list(range(negative_start_index + 1, negative_end_index)))# + 1 # plus one because of the <extra_id_0> token
 print(indices)
-positive_mask = torch.tensor([[1] * (positive_end_index - positive_start_index - 1) + [0] * (negative_end_index - negative_start_index - 1)])
-negative_mask = torch.tensor([[0] * (positive_end_index - positive_start_index - 1) + [1] * (negative_end_index - negative_start_index - 1)])
+positive_mask = torch.tensor([1] * (positive_end_index - positive_start_index - 1) + [0] * (negative_end_index - negative_start_index - 1))
+negative_mask = torch.tensor([0] * (positive_end_index - positive_start_index - 1) + [1] * (negative_end_index - negative_start_index - 1))
 print(positive_mask)
 print(negative_mask)
 
@@ -51,7 +51,7 @@ for block in pipe.transformer.transformer_blocks:
     # block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=torch.tensor([index])) 
 frames = pipe(prompt,
               negative_prompt="A non-animal object being standing out, with its colour or texture contrast against the background such that it is highly visible. The object is motionless or violent moving.",
-              num_inference_steps=3,
+              num_inference_steps=10,
               guidance_scale=9,
               num_frames=60).frames[0]
 
@@ -71,9 +71,8 @@ maps = pipe.attention_maps
 for step in range(max(len(maps) - 10, 0), len(maps)):
     for layer in range(len(maps[step])):
         print(maps[step][layer].shape)# [B, H, Q, K]
-        map = maps[step][layer][0].mean(0)[positive_mask].mean(0).mean(0)
-        print(maps[step][layer][0].mean(0)[positive_mask].shape) # this shape is [110, x, x], why 110? did not average the len, use positive mask added another dim? xtiaoxueyshouruanxtiaozasahziyank 
-        # confirmed, above ouput torch.Size([1, 11, 15900])
+        map = maps[step][layer][0].mean(0)[positive_mask==1].mean(0)
+        print(maps[step][layer][0].mean(0)[positive_mask==1].shape) # need to use bool!
         extracted_positive_maps.append(map.cpu().float().numpy().reshape(-1, frames[0].size[1]//16, frames[0].size[0]//16))
         
         map = maps[step][layer][0].mean(0)[negative_mask].mean(0)
