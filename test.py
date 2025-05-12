@@ -2,7 +2,7 @@
 import torch
 from mochi_pipeline import MochiPipeline
 from diffusers.utils import export_to_video
-
+import math
 pipe = MochiPipeline.from_pretrained("genmo/mochi-1-preview", variant="bf16", torch_dtype=torch.bfloat16).to("cuda")
 
 # Enable memory savings
@@ -30,21 +30,32 @@ tokenizer = T5TokenizerFast.from_pretrained("genmo/mochi-1-preview", subfolder="
 
 # %%
 positive_start_index = tokenizer.tokenize(prompt).index("▁*")
-negative_end_index = tokenizer.tokenize(prompt).index("*")
+positive_end_index = tokenizer.tokenize(prompt).index("*")
+
+negative_start_index = tokenizer.tokenize(prompt).index("▁+")
+negative_end_index = tokenizer.tokenize(prompt).index("+")
+
 print(tokenizer.tokenize(prompt))
-print(start_index, end_index)
+
+
+indices = torch.tensor(list(range(positive_start_index + 1, positive_end_index)) + list(range(negative_start_index + 1, negative_end_index)))# + 1 # plus one because of the <extra_id_0> token
+print(indices)
+positive_mask = torch.tensor([[1] * (positive_end_index - positive_start_index - 1) + [0] * (negative_end_index - negative_start_index - 1)])
+negative_mask = torch.tensor([[0] * (positive_end_index - positive_start_index - 1) + [1] * (negative_end_index - negative_start_index - 1)])
+print(positive_mask)
+print(negative_mask)
 
 # %%
 for block in pipe.transformer.transformer_blocks:
-    block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=torch.tensor(list(range(start_index + 1, end_index)))) #here start_index + 1, end_index, because exclude the *
+    block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=indices) #here start_index + 1, end_index, because exclude the *
     # block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=torch.tensor([index])) 
 frames = pipe(prompt,
               negative_prompt="A non-animal object being standing out, with its colour or texture contrast against the background such that it is highly visible with vibrant tones. The object is motionless.",
-              num_inference_steps=30,
+              num_inference_steps=10,
               guidance_scale=9,
               num_frames=60).frames[0]
 
-export_to_video(frames, f"mochi_{file_id:02d}.mp4", fps=30)
+export_to_video(frames, f"res/mochi_{file_id:02d}.mp4", fps=30)
 
 # %%
 frames[0].size[0]//16 * frames[0].size[1]//16
@@ -53,25 +64,37 @@ frames[0].size[0]//16 * frames[0].size[1]//16
 import pylab
 import numpy as np
 
-extracted_maps = []
+extracted_positive_maps = []
+extracted_negative_maps = []
+
 maps = pipe.attention_maps  
-for step in range(len(maps) - 10, len(maps)):
+for step in range(max(len(maps) - 10, 0), len(maps)):
     for layer in range(len(maps[step])):
-        # print(maps[step][layer].shape) [B, H, L, D]
-        map = maps[step][layer][0].mean(0)[0]
-        extracted_maps.append(map.cpu().float().numpy().reshape(-1, frames[0].size[1]//16, frames[0].size[0]//16))
-extracted_maps = np.array(extracted_maps)
+        print(maps[step][layer].shape)# [B, H, Q, K]
+        map = maps[step][layer][0].mean(0)[positive_mask].mean(0)
+        extracted_positive_maps.append(map.cpu().float().numpy().reshape(-1, frames[0].size[1]//16, frames[0].size[0]//16))
+        
+        map = maps[step][layer][0].mean(0)[negative_mask].mean(0)
+        extracted_negative_maps.append(map.cpu().float().numpy().reshape(-1, frames[0].size[1]//16, frames[0].size[0]//16))
+        
+extracted_positive_maps = np.array(extracted_positive_maps)
+extracted_negative_maps = np.array(extracted_negative_maps)
 
 # %%
-np.save(f"extracted_maps_{file_id:02d}.npy", extracted_maps)
+np.save(f"res/extracted_maps_pos_{file_id:02d}.npy", extracted_positive_maps)
+np.save(f"res/extracted_maps_neg_{file_id:02d}.npy", extracted_negative_maps)
+
 
 # %%
-mask = (extracted_maps > extracted_maps.mean(axis=0) + extracted_maps.std(axis=0)).astype(np.float32) + (extracted_maps < extracted_maps.mean(axis=0) - extracted_maps.std(axis=0)).astype(np.float32)
-extracted_maps[mask != 0] = np.nan
-mean_map = np.nanmean(np.abs(extracted_maps), axis=0)
+mask = (extracted_positive_maps > extracted_positive_maps.mean(axis=0) + extracted_positive_maps.std(axis=0)).astype(np.float32) + (extracted_positive_maps < extracted_positive_maps.mean(axis=0) - extracted_positive_maps.std(axis=0)).astype(np.float32)
+extracted_positive_maps[mask != 0] = np.nan
+mean_pos_map = np.nanmean(np.abs(extracted_positive_maps), axis=0)
+
+mask = (extracted_negative_maps > extracted_negative_maps.mean(axis=0) + extracted_negative_maps.std(axis=0)).astype(np.float32) + (extracted_negative_maps < extracted_negative_maps.mean(axis=0) - extracted_negative_maps.std(axis=0)).astype(np.float32)
+extracted_negative_maps[mask != 0] = np.nan
+mean_neg_map = np.nanmean(np.abs(extracted_negative_maps), axis=0)
 
 # %%
-mean_map.shape
 
 # %%
 import cv2
@@ -104,17 +127,22 @@ def compose_frames(frames, maps):
 def repeat_maps(maps, total_len):
     export_maps = []
     for i in range(total_len):
-        export_maps.append(maps[(i-2)//6])
+        export_maps.append(maps[math.ceil((i-2)/6)])
     return export_maps
     
-mean_map = opening(mean_map, kernel_size=3)
-mean_map = blur(mean_map, kernel_size=3)
-mean_map = resize(mean_map, size=(frames[0].size[0], frames[0].size[1]))
+mean_pos_map = opening(mean_pos_map, kernel_size=3)
+mean_neg_map = opening(mean_neg_map, kernel_size=3)
+mean_pos_map = blur(mean_pos_map, kernel_size=3)
+mean_neg_map = blur(mean_neg_map, kernel_size=3)
+mean_pos_map = resize(mean_pos_map, size=(frames[0].size[0], frames[0].size[1]))
+mean_neg_map = resize(mean_neg_map, size=(frames[0].size[0], frames[0].size[1]))
 
-mean_map = normalize(mean_map)
-video = repeat_maps(mean_map, len(frames))
-export_to_video(video, f"mochi_{file_id:02d}_map.mp4", fps=30)
-
+mean_pos_map = normalize(mean_pos_map)
+mean_neg_map = normalize(mean_neg_map)
+video = repeat_maps(mean_pos_map, len(frames))
+export_to_video(video, f"res/mochi_pos_{file_id:02d}_map.mp4", fps=30)
+video = repeat_maps(mean_neg_map, len(frames))
+export_to_video(video, f"res/mochi_neg_{file_id:02d}_map.mp4", fps=30)
 
 with open("file_id.txt", "w") as f:
     f.write(str(file_id + 1))

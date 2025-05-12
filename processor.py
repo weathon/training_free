@@ -93,13 +93,13 @@ class MochiAttnProcessor2_0:
                 valid_query, valid_key, valid_value, dropout_p=0.0, is_causal=False
             )
             
-            attn_output 
-            
             valid_sequence_length = attn_output.size(2)
             attn_output = F.pad(attn_output, (0, 0, 0, total_length - valid_sequence_length))
             attn_outputs.append(attn_output)
 
-        interested_query = valid_encoder_query[0,:,self.token_index_of_interest]
+        # print(encoder_query.shape, valid_encoder_query.shape, valid_prompt_token_indices)
+        interested_query = encoder_query[0,:,self.token_index_of_interest]
+        # interested_query = valid_encoder_query[0,:,self.token_index_of_interest]
         image_keys = key[0]
         attention_scores = torch.einsum('hqd,hkd->hqk', interested_query, image_keys).unsqueeze(0)
         self.attn_weights = F.softmax(attention_scores / math.sqrt(interested_query.size(-1)), dim=-1)
