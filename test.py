@@ -71,7 +71,9 @@ maps = pipe.attention_maps
 for step in range(max(len(maps) - 10, 0), len(maps)):
     for layer in range(len(maps[step])):
         print(maps[step][layer].shape)# [B, H, Q, K]
-        map = maps[step][layer][0].mean(0)[positive_mask].mean(0)
+        map = maps[step][layer][0].mean(0)[positive_mask].mean(0).mean(0)
+        print(maps[step][layer][0].mean(0)[positive_mask].shape) # this shape is [110, x, x], why 110? did not average the len, use positive mask added another dim? xtiaoxueyshouruanxtiaozasahziyank 
+        # confirmed, above ouput torch.Size([1, 11, 15900])
         extracted_positive_maps.append(map.cpu().float().numpy().reshape(-1, frames[0].size[1]//16, frames[0].size[0]//16))
         
         map = maps[step][layer][0].mean(0)[negative_mask].mean(0)
@@ -83,7 +85,7 @@ extracted_negative_maps = np.array(extracted_negative_maps)
 # %%
 np.save(f"res/extracted_maps_pos_{file_id:02d}.npy", extracted_positive_maps)
 np.save(f"res/extracted_maps_neg_{file_id:02d}.npy", extracted_negative_maps)
-
+print("extracted_positive_maps", extracted_positive_maps.shape)
 
 # %%
 mask = (extracted_positive_maps > extracted_positive_maps.mean(axis=0) + extracted_positive_maps.std(axis=0)).astype(np.float32) + (extracted_positive_maps < extracted_positive_maps.mean(axis=0) - extracted_positive_maps.std(axis=0)).astype(np.float32)
