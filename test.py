@@ -50,8 +50,8 @@ for block in pipe.transformer.transformer_blocks:
     block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=indices) #here start_index + 1, end_index, because exclude the *
     # block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=torch.tensor([index])) 
 frames = pipe(prompt,
-              negative_prompt="A non-animal object being standing out, with its colour or texture contrast against the background such that it is highly visible with vibrant tones. The object is motionless.",
-              num_inference_steps=10,
+              negative_prompt="A non-animal object being standing out, with its colour or texture contrast against the background such that it is highly visible. The object is motionless or violent moving.",
+              num_inference_steps=3,
               guidance_scale=9,
               num_frames=60).frames[0]
 
