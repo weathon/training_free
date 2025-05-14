@@ -4,7 +4,9 @@ from mochi_pipeline import MochiPipeline
 from diffusers.utils import export_to_video
 import math
 pipe = MochiPipeline.from_pretrained("genmo/mochi-1-preview", variant="bf16", torch_dtype=torch.bfloat16).to("cuda")
+import os
 
+os.environ["TOKENIZERS_PARALLELISM"]="false"
 # Enable memory savings
 pipe.enable_vae_tiling()
 pipe.enable_vae_slicing()
@@ -19,12 +21,8 @@ except FileNotFoundError:
     file_id = 1
 
 
-
-
-
-
 from processor import MochiAttnProcessor2_0
-prompt = "A *devil scorpionfish* moves slowly across the seafloor, crawling with small, deliberate motions. The fish's body is excellently camouflaged, blending into the +rocky, algae-covered background+ with its mottled texture, muted colors, and irregular outline, making it very hard to see."
+prompt = "A camouflaged *gray octopus* slowly drifts and shifts across the gray seafloor, its body blending almost perfectly into the greenish underwater environment in both color and texture. The octopus shape is difficult to distinguish as it glides forward, seamlessly mirroring the +background+ with subtle, smooth movement. The outlines, pattern, and colors all resemble the environment, making the animal nearly invisible as it moves naturally through the water. It blends into rocks and coral." # try mention the background is rock or coral, otherwise it will just be sand 
 from transformers import T5TokenizerFast
 tokenizer = T5TokenizerFast.from_pretrained("genmo/mochi-1-preview", subfolder="tokenizer")
 
@@ -47,56 +45,79 @@ print(negative_mask)
 
 # %%
 for block in pipe.transformer.transformer_blocks:
-    block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=indices) #here start_index + 1, end_index, because exclude the *
+    block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=indices, positive_mask=positive_mask) #here start_index + 1, end_index, because exclude the *
     # block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=torch.tensor([index])) 
 frames = pipe(prompt,
-              negative_prompt="A non-animal object being standing out, with its colour or texture contrast against the background such that it is highly visible.",
+              negative_prompt="standing out, colour or texture contrast against the background, visible, clear, distinct, easy to see, easy to distinguish, easy to identify, easy to recognize, easy to spot, easy to notice, easy to find, easy to detect",
               num_inference_steps=30,
               guidance_scale=9,
-              num_frames=60).frames[0]
+              num_frames=30).frames[0]
 
 export_to_video(frames, f"res/mochi_{file_id:02d}.mp4", fps=30)
 
-# %%
-frames[0].size[0]//16 * frames[0].size[1]//16
+# # export to frames
+# import os
+# os.makedirs(f"res/frames/{file_id:02d}", exist_ok=True)
+# for i, frame in enumerate(frames):
+#     frame.save(f"res/frames/{file_id:02d}/{i:04d}.png")
+    
+
 
 # %%
 import pylab
 import numpy as np
 
+
+def softmax(x, axis=0):
+    e_x = np.exp(x - np.max(x, axis=axis))
+    return e_x / e_x.sum(axis=axis)
+
+
 extracted_positive_maps = []
 extracted_negative_maps = []
-
+import tqdm
 maps = pipe.attention_maps  
-for step in range(max(len(maps) - 10, 0), len(maps)):
+for step in tqdm.tqdm(range(max(len(maps) - 10, 0), len(maps))):
     for layer in range(len(maps[step])): 
-        print(maps[step][layer].shape)# [B, H, Q, K]
-        map = maps[step][layer][0].mean(0)[positive_mask==1].mean(0)
-        print(maps[step][layer][0].mean(0)[positive_mask==1].shape) # need to use bool!
+        # print(maps[step][layer].shape)# [B, H, K, Q]
+        map = maps[step][layer][0].mean(0)[positive_mask==1].sum(0) # use sum, because in it it was softmax and spread outed
+        # print(maps[step][layer][0].mean(0)[positive_mask==1].shape) # need to use bool!
         extracted_positive_maps.append(map.cpu().float().numpy().reshape(-1, frames[0].size[1]//16, frames[0].size[0]//16))
         
-        map = maps[step][layer][0].mean(0)[negative_mask==1].mean(0)
+        map = maps[step][layer][0].mean(0)[negative_mask==1].sum(0) 
         extracted_negative_maps.append(map.cpu().float().numpy().reshape(-1, frames[0].size[1]//16, frames[0].size[0]//16))
-        
+
+        # assert torch.all(maps[step][layer][0].mean(0).sum(0) >= 0.99), maps[step][layer][0].mean(0).sum(0)
 extracted_positive_maps = np.array(extracted_positive_maps)
 extracted_negative_maps = np.array(extracted_negative_maps)
+
+# print(extracted_positive_maps.shape)
+
+# extracted_maps = np.stack([extracted_positive_maps, extracted_negative_maps], axis=0) / np.sqrt(128)
+# extracted_maps = softmax(extracted_maps, axis=0)
+# extracted_positive_maps = extracted_maps[0]
+# extracted_negative_maps = extracted_maps[1]
+
+
 
 # %%
 np.save(f"res/extracted_maps_pos_{file_id:02d}.npy", extracted_positive_maps)
 np.save(f"res/extracted_maps_neg_{file_id:02d}.npy", extracted_negative_maps)
-print("extracted_positive_maps", extracted_positive_maps.shape)
+# print("extracted_positive_maps", extracted_positive_maps.shape)
 
 # %%
 mask = (extracted_positive_maps > extracted_positive_maps.mean(axis=0) + extracted_positive_maps.std(axis=0)).astype(np.float32) + (extracted_positive_maps < extracted_positive_maps.mean(axis=0) - extracted_positive_maps.std(axis=0)).astype(np.float32)
-extracted_positive_maps[mask != 0] = np.nan
-mean_pos_map = np.nanmean(np.abs(extracted_positive_maps), axis=0)
+# extracted_positive_maps[mask != 0] = np.nan
+mean_pos_map = extracted_positive_maps.mean(0)
+# mean_pos_map = np.nanmean(extracted_positive_maps, axis=0)
 
 mask = (extracted_negative_maps > extracted_negative_maps.mean(axis=0) + extracted_negative_maps.std(axis=0)).astype(np.float32) + (extracted_negative_maps < extracted_negative_maps.mean(axis=0) - extracted_negative_maps.std(axis=0)).astype(np.float32)
-extracted_negative_maps[mask != 0] = np.nan
-mean_neg_map = np.nanmean(np.abs(extracted_negative_maps), axis=0)
+# extracted_negative_maps[mask != 0] = np.nan
+mean_neg_map = extracted_negative_maps.mean(0)
+# mean_neg_map = np.nanmean(extracted_negative_maps, axis=0)
 
 # %%
-
+# print("b")
 # %%
 import cv2
 
@@ -130,7 +151,8 @@ def repeat_maps(maps, total_len):
     for i in range(total_len):
         export_maps.append(maps[math.ceil((i-2)/6)])
     return export_maps
-    
+
+# print("a")
 mean_pos_map = opening(mean_pos_map, kernel_size=3)
 mean_neg_map = opening(mean_neg_map, kernel_size=3)
 mean_pos_map = blur(mean_pos_map, kernel_size=3)
@@ -140,12 +162,26 @@ mean_neg_map = resize(mean_neg_map, size=(frames[0].size[0], frames[0].size[1]))
 
 mean_pos_map = normalize(mean_pos_map)
 mean_neg_map = normalize(mean_neg_map)
-# video = repeat_maps(mean_pos_map, len(frames))
-video = compose_frames(frames, mean_pos_map)
+
+video = repeat_maps(mean_pos_map, len(frames))
+
+# video = compose_frames(frames, mean_pos_map)
+print(np.array(video).shape)
 export_to_video(video, f"res/mochi_pos_{file_id:02d}_map.mp4", fps=30)
-# video = repeat_maps(mean_neg_map, len(frames))
-video = compose_frames(frames, mean_neg_map)
+
+video = repeat_maps(mean_neg_map, len(frames))
+# video = compose_frames(frames, mean_neg_map)
 export_to_video(video, f"res/mochi_neg_{file_id:02d}_map.mp4", fps=30)
+
+# fg = np.clip(np.array(mean_pos_map) - np.array(mean_neg_map), 0, 100)
+fg = np.array(mean_pos_map) - np.array(mean_neg_map) * 3
+fg[fg < 0] = 0
+print(fg.max())
+
+fg = normalize(fg)
+video = compose_frames(frames, fg)
+export_to_video(video, f"res/mochi_fg_{file_id:02d}_map.mp4", fps=30)
+
 
 with open("file_id.txt", "w") as f:
     f.write(str(file_id + 1))

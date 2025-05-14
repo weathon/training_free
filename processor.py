@@ -99,6 +99,14 @@ class MochiAttnProcessor2_0:
             attn_outputs.append(attn_output)
 
 
+            if idx == 1:
+                interested_key = valid_encoder_key[0, :, self.token_index_of_interest]
+                image_queries = query[1]
+                attention_scores = torch.einsum('hqd,hkd->hqk', image_queries, interested_key).unsqueeze(0)
+                # self.attn_weights = attention_scores.permute(0, 1, 3, 2)
+                self.attn_weights = F.softmax(attention_scores / math.sqrt(interested_key.size(-1)), dim=-1).permute(0, 1, 3, 2)
+                
+            
         # # should we switch from image atten to the text? that makes more sense 
         # # https://arxiv.org/pdf/2408.14826 use image as query, text as key
         # # print(encoder_query.shape, valid_encoder_query.shape, valid_prompt_token_indices)
@@ -109,16 +117,7 @@ class MochiAttnProcessor2_0:
         # # should not softmax like this, because the sequence length includes the time dim? it is softmax on key dim
         # self.attn_weights = attention_scores
         # # self.attn_weights = F.softmax(attention_scores / math.sqrt(interested_query.size(-1)), dim=-1)
-
-        print(encoder_key.shape)
-        interested_key = encoder_key[1, :, self.token_index_of_interest]
-        image_queries = query[1]
-        attention_scores = torch.einsum('hqd,hkd->hqk', image_queries, interested_key).unsqueeze(0)
-        # self.attn_weights = F.softmax(attention_scores / math.sqrt(image_queries.size(-1)), dim=-1).permute(0, 1, 3, 2)
-        self.attn_weights = attention_scores.permute(0, 1, 3, 2)
-        # self.attn_weights = attention_scores.permute(0, 1, 3, 2) #(attention_scores - attention_scores.min(axis=-1, keepdims=True)) / (attention_scores.max(axis=-1, keepdims=True) - attention_scores.min(axis=-1, keepdims=True))
-        
-        
+            
         
         hidden_states = torch.cat(attn_outputs, dim=0)
         hidden_states = hidden_states.transpose(1, 2).flatten(2, 3)

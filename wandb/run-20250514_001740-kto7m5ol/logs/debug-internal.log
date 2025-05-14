@@ -1,0 +1,7 @@
+{"time":"2025-05-14T00:17:40.953275217-07:00","level":"INFO","msg":"stream: starting","core version":"0.19.11","symlink path":"/home/wg25r/make_it_move/training_free/wandb/run-20250514_001740-kto7m5ol/logs/debug-core.log"}
+{"time":"2025-05-14T00:17:41.205347292-07:00","level":"INFO","msg":"created new stream","id":"kto7m5ol"}
+{"time":"2025-05-14T00:17:41.205421614-07:00","level":"INFO","msg":"stream: started","id":"kto7m5ol"}
+{"time":"2025-05-14T00:17:41.205460758-07:00","level":"INFO","msg":"handler: started","stream_id":"kto7m5ol"}
+{"time":"2025-05-14T00:17:41.205479039-07:00","level":"INFO","msg":"writer: Do: started","stream_id":"kto7m5ol"}
+{"time":"2025-05-14T00:17:41.205521389-07:00","level":"INFO","msg":"sender: started","stream_id":"kto7m5ol"}
+{"time":"2025-05-14T00:17:41.404251027-07:00","level":"INFO","msg":"Starting system monitor"}

@@ -1,0 +1,14 @@
+You set `add_prefix_space`. The tokenizer needs to be converted from the slow tokenizers
+Traceback (most recent call last):
+  File "/home/wg25r/make_it_move/training_free/main.py", line 34, in <module>
+    neg_prompt = json.loads(prompt)["neg_prompt"]
+                 ^^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/json/__init__.py", line 346, in loads
+    return _default_decoder.decode(s)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/json/decoder.py", line 337, in decode
+    obj, end = self.raw_decode(s, idx=_w(s, 0).end())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/json/decoder.py", line 355, in raw_decode
+    raise JSONDecodeError("Expecting value", s, err.value) from None
+json.decoder.JSONDecodeError: Expecting value: line 1 column 1 (char 0)

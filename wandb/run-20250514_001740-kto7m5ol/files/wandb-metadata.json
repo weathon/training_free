@@ -1,0 +1,54 @@
+{
+  "os": "Linux-6.8.0-57-generic-x86_64-with-glibc2.35",
+  "python": "CPython 3.11.11",
+  "startedAt": "2025-05-14T07:17:40.948969Z",
+  "program": "/home/wg25r/make_it_move/training_free/main.py",
+  "codePath": "main.py",
+  "git": {
+    "remote": "https://github.com/weathon/training_free.git",
+    "commit": "4fdb956d7749a71ed3f48c8704f35f6d21e823c2"
+  },
+  "email": "wguo6358@gmail.com",
+  "root": "/home/wg25r/make_it_move/training_free",
+  "host": "shandu.ws.ok.ubc.ca",
+  "executable": "/home/wg25r/miniconda/envs/mochi/bin/python3",
+  "codePathLocal": "main.py",
+  "cpu_count": 56,
+  "cpu_count_logical": 112,
+  "gpu": "NVIDIA RTX A6000",
+  "gpu_count": 3,
+  "disk": {
+    "/": {
+      "total": "2005769203712",
+      "used": "1631477641216"
+    }
+  },
+  "memory": {
+    "total": "810116677632"
+  },
+  "cpu": {
+    "count": 56,
+    "countLogical": 112
+  },
+  "gpu_nvidia": [
+    {
+      "name": "NVIDIA RTX A6000",
+      "memoryTotal": "51527024640",
+      "cudaCores": 10752,
+      "architecture": "Ampere"
+    },
+    {
+      "name": "NVIDIA RTX A6000",
+      "memoryTotal": "51527024640",
+      "cudaCores": 10752,
+      "architecture": "Ampere"
+    },
+    {
+      "name": "NVIDIA RTX A6000",
+      "memoryTotal": "51527024640",
+      "cudaCores": 10752,
+      "architecture": "Ampere"
+    }
+  ],
+  "cudaVersion": "12.4"
+}
