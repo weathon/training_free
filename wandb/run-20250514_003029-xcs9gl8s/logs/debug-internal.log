@@ -1,0 +1,15 @@
+{"time":"2025-05-14T00:30:29.795726791-07:00","level":"INFO","msg":"stream: starting","core version":"0.19.11","symlink path":"/home/wg25r/make_it_move/training_free/wandb/run-20250514_003029-xcs9gl8s/logs/debug-core.log"}
+{"time":"2025-05-14T00:30:30.042738579-07:00","level":"INFO","msg":"created new stream","id":"xcs9gl8s"}
+{"time":"2025-05-14T00:30:30.042862343-07:00","level":"INFO","msg":"stream: started","id":"xcs9gl8s"}
+{"time":"2025-05-14T00:30:30.042911541-07:00","level":"INFO","msg":"handler: started","stream_id":"xcs9gl8s"}
+{"time":"2025-05-14T00:30:30.042913061-07:00","level":"INFO","msg":"writer: Do: started","stream_id":"xcs9gl8s"}
+{"time":"2025-05-14T00:30:30.043014231-07:00","level":"INFO","msg":"sender: started","stream_id":"xcs9gl8s"}
+{"time":"2025-05-14T00:30:30.325332838-07:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-05-14T00:41:20.122199843-07:00","level":"INFO","msg":"stream: closing","id":"xcs9gl8s"}
+{"time":"2025-05-14T00:41:20.122253342-07:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-05-14T00:41:20.122289788-07:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-05-14T00:41:20.514123996-07:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-05-14T00:41:20.68072052-07:00","level":"INFO","msg":"handler: closed","stream_id":"xcs9gl8s"}
+{"time":"2025-05-14T00:41:20.68079076-07:00","level":"INFO","msg":"writer: Close: closed","stream_id":"xcs9gl8s"}
+{"time":"2025-05-14T00:41:20.680808248-07:00","level":"INFO","msg":"sender: closed","stream_id":"xcs9gl8s"}
+{"time":"2025-05-14T00:41:20.680971489-07:00","level":"INFO","msg":"stream: closed","id":"xcs9gl8s"}

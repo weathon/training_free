@@ -1,0 +1,66 @@
+You set `add_prefix_space`. The tokenizer needs to be converted from the slow tokenizers
+['▁there', '▁is', '▁an', '▁*', 'e', 'a', 'stern', '▁scr', 'e', 'ech', '▁', 'ow', 'l', '*', '▁almost', '▁invisible', '▁as', '▁it', '▁is', '▁cam', 'ou', 'f', 'lage', 'd', '▁against', '▁', 'a', '▁+', 'tre', 'e', '▁trunk', '+', '.', '▁the', '▁*', 'e', 'a', 'stern', '▁scr', 'e', 'ech', '▁', 'ow', 'l', '*', '▁has', '▁grey', 'ish', '-', 'brow', 'n', ',', '▁rough', ',', '▁bark', '-', 'like', '▁feather', 's', '▁that', '▁match', '▁the', '▁color', '▁and', '▁texture', '▁of', '▁the', '▁+', 'tre', 'e', '▁trunk', '+', '▁with', '▁its', '▁similarly', '▁grey', '-', 'brow', 'n', ',', '▁cracked', '▁bark', '.', '▁the', '▁only', '▁slight', '▁motion', '▁is', '▁the', '▁subtle', '▁turning', '▁of', '▁the', '▁', 'ow', 'l', "'", 's', '▁head', ',', '▁', 'blending', '▁seamlessly', '▁with', '▁the', '▁+', 'tre', 'e', '▁trunk', '+', '.', '▁the', '▁animal', '▁might', '▁be', '▁hard', '▁to', '▁see', '▁and', '▁blend', 's', '▁in', '▁nearly', '▁perfectly', '▁with', '▁its', '▁environment', '▁due', '▁to', '▁the', '▁similar', '▁textures', ',', '▁colors', ',', '▁and', '▁shapes', '.']
+tensor([ 4,  5,  6,  7,  8,  9, 10, 11, 12, 28, 29, 30])
+tensor([1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0])
+tensor([0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1])
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████| 30/30 [06:22<00:00, 12.74s/it]
+100%|█████████████████████████████████████████████████████████████████████████████████████████████████████| 10/10 [00:00<00:00, 53.35it/s]
+(73, 480, 848)
+1.0
+[34m[1mwandb[0m: [33mWARNING[0m `format` argument was not provided, defaulting to `gif`. This parameter will be required in v0.20.0, please specify the format explicitly.
+[34m[1mwandb[0m: [33mWARNING[0m `format` argument was not provided, defaulting to `gif`. This parameter will be required in v0.20.0, please specify the format explicitly.
+['▁There', '▁is', '▁', 'a', '▁*', 'flat', 'fish', '*', '▁sub', 't', 'ly', '▁cam', 'ou', 'f', 'lage', 'd', '▁in', '▁', 'a', '▁+', 's', 'and', 'y', '▁ocean', '▁floor', '+', ',', '▁', 'blending', '▁almost', '▁perfectly', '▁due', '▁to', '▁its', '▁mot', 't', 'led', '▁light', '▁be', 'ige', '▁and', '▁spe', 'ckle', 'd', '▁pattern', '▁matching', '▁the', '▁', 'textured', '▁surface', '▁of', '▁the', '▁sandy', '▁sea', 'bed', '.', '▁The', '▁*', 'flat', 'fish', '*', "'", 's', '▁oval', ',', '▁flat', '▁body', ',', '▁colored', '▁pale', '▁brown', '▁and', '▁', 'dotted', '▁with', '▁', 's', 'and', '-', 'like', '▁spots', ',', '▁matches', '▁the', '▁+', 's', 'and', "'", 's', '+', '▁grain', 'y', ',', '▁', 't', 'an', '▁appearance', '.', '▁The', '▁*', 'flat', 'fish', '*', '▁slowly', '▁glide', 's', '▁forward', '▁with', '▁minimal', '▁movement', ',', '▁remaining', '▁hard', '▁to', '▁see', '▁as', '▁it', '▁merge', 's', '▁into', '▁the', '▁substrate', '.']
+tensor([ 5,  6, 20, 21, 22, 23, 24])
+tensor([1, 1, 0, 0, 0, 0, 0])
+tensor([0, 0, 1, 1, 1, 1, 1])
+ 67%|███████████████████████████████████████████████████████████████████▎                                 | 20/30 [04:34<02:17, 13.71s/it]
+Traceback (most recent call last):
+  File "/home/wg25r/make_it_move/training_free/main.py", line 62, in <module>
+    frames = pipe(prompt,
+             ^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/torch/utils/_contextlib.py", line 116, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/make_it_move/training_free/mochi_pipeline.py", line 675, in __call__
+    noise_pred = self.transformer(
+                 ^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/accelerate/hooks.py", line 176, in new_forward
+    output = module._old_forward(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/diffusers/models/transformers/transformer_mochi.py", line 468, in forward
+    hidden_states, encoder_hidden_states = block(
+                                           ^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/diffusers/models/transformers/transformer_mochi.py", line 228, in forward
+    ff_output = self.ff(norm_hidden_states)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/diffusers/models/attention.py", line 1250, in forward
+    hidden_states = module(hidden_states)
+                    ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/diffusers/models/activations.py", line 146, in forward
+    return hidden_states * self.activation(gate)
+           ~~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~~~~~~~
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 646.00 MiB. GPU 0 has a total capacity of 47.53 GiB of which 624.00 MiB is free. Including non-PyTorch memory, this process has 46.90 GiB memory in use. Of the allocated memory 44.58 GiB is allocated by PyTorch, and 2.01 GiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)

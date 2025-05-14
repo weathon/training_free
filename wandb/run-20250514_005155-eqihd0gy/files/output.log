@@ -1,0 +1,67 @@
+You set `add_prefix_space`. The tokenizer needs to be converted from the slow tokenizers
+['▁there', '▁is', '▁an', '▁*', 'e', 'a', 'stern', '▁scr', 'e', 'ech', '▁', 'ow', 'l', '*', '▁almost', '▁invisible', '▁as', '▁it', '▁is', '▁cam', 'ou', 'f', 'lage', 'd', '▁against', '▁', 'a', '▁+', 'tre', 'e', '▁trunk', '+', '.', '▁the', '▁*', 'e', 'a', 'stern', '▁scr', 'e', 'ech', '▁', 'ow', 'l', '*', '▁has', '▁grey', 'ish', '-', 'brow', 'n', ',', '▁rough', ',', '▁bark', '-', 'like', '▁feather', 's', '▁that', '▁match', '▁the', '▁color', '▁and', '▁texture', '▁of', '▁the', '▁+', 'tre', 'e', '▁trunk', '+', '▁with', '▁its', '▁similarly', '▁grey', '-', 'brow', 'n', ',', '▁cracked', '▁bark', '.', '▁the', '▁only', '▁slight', '▁motion', '▁is', '▁the', '▁subtle', '▁turning', '▁of', '▁the', '▁', 'ow', 'l', "'", 's', '▁head', ',', '▁', 'blending', '▁seamlessly', '▁with', '▁the', '▁+', 'tre', 'e', '▁trunk', '+', '.', '▁the', '▁animal', '▁might', '▁be', '▁hard', '▁to', '▁see', '▁and', '▁blend', 's', '▁in', '▁nearly', '▁perfectly', '▁with', '▁its', '▁environment', '▁due', '▁to', '▁the', '▁similar', '▁textures', ',', '▁colors', ',', '▁and', '▁shapes', '.']
+tensor([ 4,  5,  6,  7,  8,  9, 10, 11, 12, 28, 29, 30])
+tensor([1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0])
+tensor([0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1])
+ 13%|███████████████▊                                                                                                       | 4/30 [01:08<07:27, 17.20s/it]
+Traceback (most recent call last):
+  File "/home/wg25r/make_it_move/training_free/main.py", line 62, in <module>
+    frames = pipe(prompt,
+             ^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/torch/utils/_contextlib.py", line 116, in decorate_context
+    return func(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/make_it_move/training_free/mochi_pipeline.py", line 675, in __call__
+    noise_pred = self.transformer(
+                 ^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/accelerate/hooks.py", line 176, in new_forward
+    output = module._old_forward(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/diffusers/models/transformers/transformer_mochi.py", line 468, in forward
+    hidden_states, encoder_hidden_states = block(
+                                           ^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/diffusers/models/transformers/transformer_mochi.py", line 219, in forward
+    attn_hidden_states, context_attn_hidden_states = self.attn1(
+                                                     ^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1751, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1762, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/diffusers/models/attention_processor.py", line 987, in forward
+    return self.processor(
+           ^^^^^^^^^^^^^^^
+  File "/home/wg25r/make_it_move/training_free/processor.py", line 105, in __call__
+    attention_scores = torch.einsum('hqd,hkd->hqk', image_queries, interested_key).unsqueeze(0)
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/torch/functional.py", line 225, in einsum
+    def einsum(*args: Any) -> Tensor:
+
+KeyboardInterrupt
+Exception ignored in atexit callback: <function _start_and_connect_service.<locals>.teardown_atexit at 0x771ae73920c0>
+Traceback (most recent call last):
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/wandb/sdk/lib/service_connection.py", line 94, in teardown_atexit
+    conn.teardown(hooks.exit_code)
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/wandb/sdk/lib/service_connection.py", line 226, in teardown
+    self._router.join()
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/site-packages/wandb/sdk/interface/router.py", line 75, in join
+    self._thread.join()
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/threading.py", line 1119, in join
+    self._wait_for_tstate_lock()
+  File "/home/wg25r/miniconda/envs/mochi/lib/python3.11/threading.py", line 1139, in _wait_for_tstate_lock
+    if lock.acquire(block, timeout):
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt:
