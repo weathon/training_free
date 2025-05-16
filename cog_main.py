@@ -1,32 +1,19 @@
-# %%
 import torch
-from mochi_pipeline import MochiPipeline
+from cog_pipeline import CogVideoXPipeline
+from cog_processor import CogVideoXAttnProcessor2_0
 from diffusers.utils import export_to_video
+from transformers import T5TokenizerFast
+import os 
+import numpy as np
 import math
-pipe = MochiPipeline.from_pretrained("genmo/mochi-1-preview", variant="bf16", torch_dtype=torch.bfloat16).to("cuda")
-import os
+import time
 
 os.environ["TOKENIZERS_PARALLELISM"]="false"
-# Enable memory savings
-pipe.enable_vae_tiling()
-pipe.enable_vae_slicing()
-pipe.enable_model_cpu_offload()
-
-# %%
-
-try:
-    with open("file_id.txt", "r") as f:
-        file_id = int(f.read())
-except FileNotFoundError:
-    file_id = 1
 
 
-from mochi_processor import MochiAttnProcessor2_0
-prompt = "A camouflaged *gray octopus* slowly drifts and shifts across the gray seafloor, its body blending almost perfectly into the greenish underwater environment in both color and texture. The octopus shape is difficult to distinguish as it glides forward, seamlessly mirroring the +background+ with subtle, smooth movement. The outlines, pattern, and colors all resemble the environment, making the animal nearly invisible as it moves naturally through the water. It blends into rocks and coral." # try mention the background is rock or coral, otherwise it will just be sand 
-from transformers import T5TokenizerFast
-tokenizer = T5TokenizerFast.from_pretrained("genmo/mochi-1-preview", subfolder="tokenizer")
+prompt = "There is a *crab* blending into a +rocky ocean floor+ where the crab's mottled brown shell, rough texture, and uneven shape closely match the scattered rocks and coarse sand, all in muted brown and grey tones. The crab moves slowly and subtly, making it difficult to distinguish as its rough brown pattern looks just like a piece of rock among the uneven, similarly colored stones and patches of sand."
+tokenizer = T5TokenizerFast.from_pretrained("THUDM/CogVideoX-5b", subfolder="tokenizer")
 
-# %%
 positive_start_index = tokenizer.tokenize(prompt).index("▁*")
 positive_end_index = tokenizer.tokenize(prompt).index("*")
 
@@ -34,7 +21,7 @@ negative_start_index = tokenizer.tokenize(prompt).index("▁+")
 negative_end_index = tokenizer.tokenize(prompt).index("+")
 
 print(tokenizer.tokenize(prompt))
-
+file_id = 1
 
 indices = torch.tensor(list(range(positive_start_index + 1, positive_end_index)) + list(range(negative_start_index + 1, negative_end_index)))# + 1 # plus one because of the <extra_id_0> token
 print(indices)
@@ -43,34 +30,31 @@ negative_mask = torch.tensor([0] * (positive_end_index - positive_start_index - 
 print(positive_mask)
 print(negative_mask)
 
-# %%
+pipe = CogVideoXPipeline.from_pretrained(
+    "THUDM/CogVideoX-5b",
+    torch_dtype=torch.bfloat16
+)
+
+
+pipe.enable_model_cpu_offload()
+pipe.vae.enable_tiling()
+pipe.vae.enable_slicing()
+
 for block in pipe.transformer.transformer_blocks:
-    block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=indices, positive_mask=positive_mask) #here start_index + 1, end_index, because exclude the *
-    # block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=torch.tensor([index])) 
-frames = pipe(prompt,
-              negative_prompt="standing out, colour or texture contrast against the background, visible, clear, distinct, easy to see, easy to distinguish, easy to identify, easy to recognize, easy to spot, easy to notice, easy to find, easy to detect",
-              num_inference_steps=30,
-              guidance_scale=9,
-              num_frames=30).frames[0]
-
-export_to_video(frames, f"res/mochi_{file_id:02d}.mp4", fps=30)
-
-# # export to frames
-# import os
-# os.makedirs(f"res/frames/{file_id:02d}", exist_ok=True)
-# for i, frame in enumerate(frames):
-#     frame.save(f"res/frames/{file_id:02d}/{i:04d}.png")
+    block.attn1.processor = CogVideoXAttnProcessor2_0(token_index_of_interest=indices) 
     
+frames = pipe(
+    prompt=prompt,
+    negative_prompt="standing out, colour or texture contrast against the background, visible, clear, distinct, easy to see, easy to distinguish, easy to identify, easy to recognize, easy to spot, easy to notice, easy to find, easy to detect, big and center",
+    num_videos_per_prompt=1,
+    num_inference_steps=30,
+    num_frames=30,
+    guidance_scale=12,
+    generator=torch.Generator(device="cuda").manual_seed(int(time.time() * 1000) % 2**32),  
+).frames[0]
 
+export_to_video(frames, "output.mp4", fps=30)
 
-# %%
-import pylab
-import numpy as np
-
-
-def softmax(x, axis=0):
-    e_x = np.exp(x - np.max(x, axis=axis))
-    return e_x / e_x.sum(axis=axis)
 
 
 extracted_positive_maps = []
@@ -167,21 +151,18 @@ video = repeat_maps(mean_pos_map, len(frames))
 
 # video = compose_frames(frames, mean_pos_map)
 print(np.array(video).shape)
-export_to_video(video, f"res/mochi_pos_{file_id:02d}_map.mp4", fps=30)
+export_to_video(video, f"res/cog_pos_{file_id:02d}_map.mp4", fps=30)
 
 video = repeat_maps(mean_neg_map, len(frames))
 # video = compose_frames(frames, mean_neg_map)
-export_to_video(video, f"res/mochi_neg_{file_id:02d}_map.mp4", fps=30)
+export_to_video(video, f"res/cog_neg_{file_id:02d}_map.mp4", fps=30)
 
 # fg = np.clip(np.array(mean_pos_map) - np.array(mean_neg_map), 0, 100)
-fg = np.array(mean_pos_map) - np.array(mean_neg_map) * 3
+fg = np.array(mean_pos_map) - np.array(mean_neg_map) * 2
 fg[fg < 0] = 0
 print(fg.max())
 
 fg = normalize(fg)
 video = compose_frames(frames, fg)
-export_to_video(video, f"res/mochi_fg_{file_id:02d}_map.mp4", fps=30)
+export_to_video(video, f"res/cog_fg_{file_id:02d}_map.mp4", fps=30)
 
-
-with open("file_id.txt", "w") as f:
-    f.write(str(file_id + 1))

@@ -3,7 +3,7 @@ import torch
 from mochi_pipeline import MochiPipeline
 from diffusers.utils import export_to_video
 import math
-pipe = MochiPipeline.from_pretrained("genmo/mochi-1-preview", variant="bf16", torch_dtype=torch.bfloat16).to("cuda")
+pipe = MochiPipeline.from_pretrained("genmo/mochi-1-preview", torch_dtype=torch.bfloat16).to("cuda")
 import os
 import wandb
 
@@ -18,7 +18,7 @@ pipe.enable_model_cpu_offload()
 
 
 
-from processor import MochiAttnProcessor2_0
+from mochi_processor import MochiAttnProcessor2_0
 from transformers import T5TokenizerFast
 tokenizer = T5TokenizerFast.from_pretrained("genmo/mochi-1-preview", subfolder="tokenizer")
 
@@ -31,7 +31,7 @@ filename = args.filename
 
 wandb.init(project="mochi", resume=True, id="u8b49ubr")
 
-with open(os.path.join("dataset", filename), "r") as f:
+with open(filename, "r") as f:
     _prompt = f.read()
 prompt = json.loads(_prompt)["pos_prompt"]
 neg_prompt = json.loads(_prompt)["neg_prompt"]
@@ -57,16 +57,16 @@ positive_mask = torch.tensor([1] * (positive_end_index - positive_start_index - 
 negative_mask = torch.tensor([0] * (positive_end_index - positive_start_index - 1) + [1] * (negative_end_index - negative_start_index - 1))
 print(positive_mask)
 print(negative_mask)
-
+import random
 # %%
 for block in pipe.transformer.transformer_blocks:
     block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=indices, positive_mask=positive_mask) #here start_index + 1, end_index, because exclude the *
     # block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=torch.tensor([index])) 
-frames = pipe(prompt,
-            negative_prompt=neg_prompt,
+frames = pipe(prompt + ("" if random.random()<0.5 else " The animal is small and far away, making it even harder to see. "),
+            negative_prompt=neg_prompt + "standing out, colour or texture contrast against the background, visible, clear, distinct, easy to see, easy to distinguish, easy to identify, easy to recognize, easy to spot, easy to notice, easy to find, easy to detect, big and center", 
             num_inference_steps=30,
-            guidance_scale=9,
-            num_frames=75).frames[0]
+            guidance_scale=12,
+            num_frames=30).frames[0]
 
 export_to_video(frames, f"res/mochi_{file_id:02d}.mp4", fps=30)
 

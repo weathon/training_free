@@ -11,9 +11,9 @@ import cv2
 path = "/home/wg25r/fastdata/fullmoca/MoCA-Video-Train/"
 rgb_dir = "./dataset"
 
-if os.path.exists(rgb_dir):
-    os.system(f"rm -rf {rgb_dir}")
-os.makedirs(rgb_dir)
+# if os.path.exists(rgb_dir):
+#     os.system(f"rm -rf {rgb_dir}")
+# os.makedirs(rgb_dir)
 
 
 # for video in os.listdir(path):
@@ -34,7 +34,7 @@ def process_video(video):
         writer_rgb = imageio.get_writer(rgb_out_path, fps=24)
         for i, f in enumerate(seg_frames):
             img = imageio.imread(os.path.join(frame_dir, f))
-            img_resized = Image.fromarray(img).resize((832, 480))
+            img_resized = Image.fromarray(img).resize((848, 480))
             writer_rgb.append_data(np.array(img_resized).astype(np.uint8))
         writer_rgb.close()
 
@@ -106,7 +106,7 @@ def process_video_normal(video):
         writer_rgb = imageio.get_writer(rgb_out_path, fps=24)
         for i, f in enumerate(seg_frames):
             img = imageio.imread(os.path.join(frame_dir, f))
-            img_resized = Image.fromarray(img).resize((832, 480))
+            img_resized = Image.fromarray(img).resize((848, 480))
             writer_rgb.append_data(np.array(img_resized).astype(np.uint8))
         writer_rgb.close()
         
@@ -131,10 +131,10 @@ def process_video_highlight(video):
             writer_rgb = imageio.get_writer(rgb_out_path, fps=24)
             for i, f in enumerate(seg_frames):
                 img = imageio.imread(os.path.join(frame_dir, f))
-                img_resized = Image.fromarray(img).resize((832, 480)) 
+                img_resized = Image.fromarray(img).resize((848, 480)) 
                 img_resized = np.array(img_resized).astype(int)
                 mask = np.array(imageio.imread(os.path.join(gt_dir, os.path.splitext(f)[0] + '.png')))
-                mask_resized = cv2.resize(mask, (832, 480), interpolation=cv2.INTER_NEAREST)
+                mask_resized = cv2.resize(mask, (848, 480), interpolation=cv2.INTER_NEAREST)
                 img_resized = np.where(mask_resized[:,:,None] > 0, img_resized * factor, img_resized).astype(int)            
                 img_resized = np.clip(img_resized, 0, 255).astype(np.uint8)
                 writer_rgb.append_data(np.array(img_resized).astype(np.uint8))
@@ -178,7 +178,7 @@ class Prompt(BaseModel):
     neg_prompt: str
   
 
-positive_gpt_prompt = "Describe in 2-3 setence this image such that the prompt will be used to generate an video. Mention motion, the object might be hard to see. the filename is %s, filename might has other things than the animal. Do not mention filename just the animal name. The object might be hard to see (mention this) and blended into the envirement. Mention the animal is camflague and blend into the envirement for texture, color, and shape (mention the specific color texture and shape of both the animal and background separately, i.e. mention the animal has color A and the background has a close color B). Mention the animal's motion, but do not mention this makes it easy to spot. At the same time, provide a negative prompt, tell what the model should not generate, could be: clearly visible, standing out, easy to spot, obvious, distinct, high contrast, sharp outline, border, vibrant colors, unnatural colors, unnature bodies, blurry, low quality, pixelated, text, over exposure, etc. Do just just copy paste this, write it based on specific video. Both prompt should be description and not action requiring. Do not mention positive part in negative prompt and vice versa. Negative prompt should be description of what not to be in a positive way, e.g. 'ugly face', instead of 'do not generate ugly face'. Negative prompt should be information dense, not detialed, and just a list of words. Use simple language! Mention the foreground and the background as what they are, what the animal is blending into. When give your positive prompt, put the foreground object (animal) in *animal* and background key words in +background+, you can only have one foreground and one background highlighted, like 'there is *rabbit* ...... in a +bush+.  "
+positive_gpt_prompt = "Describe in 2-3 setence this image such that the prompt will be used to generate an video. Mention motion, the object might be hard to see. the filename is %s, filename might has other things than the animal. Do not mention filename just the animal name. The object might be hard to see (mention this) and blended into the envirement. Mention the animal is camflague and blend into the envirement for texture, color, and shape (mention the specific color texture and shape of both the animal and background separately, i.e. mention the animal has color A and the background has a close color B). Mention the animal's motion, but do not mention this makes it easy to spot. At the same time, provide a negative prompt, tell what the model should not generate, could be: clearly visible, standing out, easy to spot, obvious, distinct, high contrast, sharp outline, border, vibrant colors, unnatural colors, unnature bodies, blurry, low quality, pixelated, text, over exposure, etc. Do just just copy paste this, write it based on specific video. Both prompt should be description and not action requiring. Do not mention positive part in negative prompt and vice versa. Negative prompt should be description of what not to be in a positive way, e.g. 'ugly face', instead of 'do not generate ugly face'. Negative prompt should be information dense, not detialed, and just a list of words. Use simple language! Mention the foreground and the background as what they are, what the animal is blending into. When give your positive prompt, put the foreground object (animal) in *animal* and background key words in +background+, you can only have one foreground and one background highlighted, like 'there is *rabbit* ...... in a +bush+.  Mention what the animal looks like in the background, like the crab looks like a rock, blend into other rocks and sand. "
 
 negative_gpt_prompt = "Describe in 2-3 setence this image such that the prompt will be used to generate an video. Mention motion. the filename is %s, filename might has other things than the main object. Do not mention filename just the main object name. The object is clearly stand out and maybe highlighted or contrasted (if the filename has 'hl_' at the begining, if so mention this) and standout into the envirement (mention this always). Mention the object's motion. Use simple language and vocab besides the name of the object. When give your positive prompt, put the foreground object in *object* and background key words in +background+, you can only have one foreground and one background highlighted, like 'there is *rabbit* ...... in a +bush+. " 
 
