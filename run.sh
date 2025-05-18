@@ -1,5 +1,5 @@
 #!/bin/bash
 
-for file in dataset/*.txt; do
-    python3 main.py --filename "$file"
+for file in finetrainers/training/mochi-1/dataset/*.txt; do
+    python3 mochi_main.py --filename "$file";
 done

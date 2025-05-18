@@ -1,7 +1,0 @@
-{"time":"2025-05-14T00:51:55.770975443-07:00","level":"INFO","msg":"stream: starting","core version":"0.19.11","symlink path":"/home/wg25r/make_it_move/training_free/wandb/run-20250514_005155-eqihd0gy/logs/debug-core.log"}
-{"time":"2025-05-14T00:51:56.003253253-07:00","level":"INFO","msg":"created new stream","id":"eqihd0gy"}
-{"time":"2025-05-14T00:51:56.003313487-07:00","level":"INFO","msg":"stream: started","id":"eqihd0gy"}
-{"time":"2025-05-14T00:51:56.00337697-07:00","level":"INFO","msg":"sender: started","stream_id":"eqihd0gy"}
-{"time":"2025-05-14T00:51:56.00337911-07:00","level":"INFO","msg":"writer: Do: started","stream_id":"eqihd0gy"}
-{"time":"2025-05-14T00:51:56.003474974-07:00","level":"INFO","msg":"handler: started","stream_id":"eqihd0gy"}
-{"time":"2025-05-14T00:51:56.244872259-07:00","level":"INFO","msg":"Starting system monitor"}

@@ -708,7 +708,7 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
 
                 # b_time = time.time()
                 # self.disable_lora() # disable lora not only disabled lora also changed otherthings 
-                self.set_adapters(["camflagued"], adapter_weights=[0.02])
+                self.set_adapters(["camflagued"], adapter_weights=[0.01])
                 
                 # e_time = time.time()
                 # print(f"Unload lora weights time: {e_time - b_time}")

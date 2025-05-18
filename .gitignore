@@ -4,3 +4,7 @@ __pycache__
 wandb
 mochi
 finetrainers
+*.zip
+dataset
+mochi
+cog_dataset
