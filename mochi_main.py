@@ -29,10 +29,11 @@ import argparse
 import json
 parser = argparse.ArgumentParser(description="Mochi")
 parser.add_argument("--filename", type=str)
+parser.add_argument("--run_id", type=str, default="mochi")
 args = parser.parse_args()
 filename = args.filename
 
-wandb.init(project="mochi", resume=True, id="o984uio0")
+wandb.init(project="mochi", resume=True, id=args.run_id)
 
 with open(filename, "r") as f:
     _prompt = f.read()
@@ -70,10 +71,10 @@ for block in pipe.transformer.transformer_blocks:
     block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=indices, positive_mask=positive_mask) #here start_index + 1, end_index, because exclude the *
     # block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=torch.tensor([index])) 
 frames = pipe(prompt + ("" if random.random()<0.5 else " The animal is small and far away, making it even harder to see. "),
-            negative_prompt=neg_prompt + "blury, out of focus, blurry, pixelated, low resolution, low quality, low detail, low fidelity, low definition, low clarity, low sharpness, low contrast, low brightness, low saturation", 
+            negative_prompt="standing out, colour or texture contrast against the background, easy to recognize, easy to spot, easy to find, easy to detect, big and center, blury, out of focus, blurry, pixelated, low resolution, low quality, low detail, low fidelity, low definition, low clarity, low sharpness, low contrast, low brightness, low saturation", 
             num_inference_steps=64,
-            guidance_scale=4.5, 
-            num_frames=60).frames[0]
+            guidance_scale=6,
+            num_frames=30).frames[0]
 # lower guidance scale, blury but camflagued
 export_to_video(frames, f"res/mochi_{file_id:02d}.mp4", fps=30)
 # blury image might be from the negative prompt 
@@ -206,6 +207,7 @@ export_to_video(video, f"res/mochi_fg_{file_id:02d}_map.mp4", fps=30)
 wandb.log({
     "video": wandb.Video(f"res/mochi_{file_id:02d}.mp4"),
     "fg": wandb.Video(f"res/mochi_fg_{file_id:02d}_map.mp4"),
+    "filename": filename,
 })
 
 with open("file_id.txt", "w") as f:

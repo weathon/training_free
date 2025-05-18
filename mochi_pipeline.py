@@ -679,7 +679,9 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
                 # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
                 timestep = t.expand(latent_model_input.shape[0]).to(latents.dtype)
                 # b_time = time.time()
-                self.enable_lora()
+                # self.enable_lora()
+                self.set_adapters(["camflagued"], adapter_weights=[0.04])
+                
                 # self.disable_lora()
  
                 # e_time = time.time()
@@ -705,7 +707,9 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
                 #     noise_pred = noise_pred_uncond + self.guidance_scale * (noise_pred_text - noise_pred_uncond)
 
                 # b_time = time.time()
-                self.disable_lora() # disable lora not only disabled lora also changed otherthings 
+                # self.disable_lora() # disable lora not only disabled lora also changed otherthings 
+                self.set_adapters(["camflagued"], adapter_weights=[0.02])
+                
                 # e_time = time.time()
                 # print(f"Unload lora weights time: {e_time - b_time}")
                 
