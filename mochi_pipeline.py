@@ -14,10 +14,11 @@
 
 import inspect
 from typing import Any, Callable, Dict, List, Optional, Union
-
+import time 
 import numpy as np
 import torch
 from transformers import T5EncoderModel, T5TokenizerFast
+from mochi_processor import MochiAttnProcessor2_0
 
 from diffusers.callbacks import MultiPipelineCallbacks, PipelineCallback
 from diffusers.loaders import Mochi1LoraLoaderMixin
@@ -111,8 +112,9 @@ def retrieve_timesteps(
         `Tuple[torch.Tensor, int]`: A tuple where the first element is the timestep schedule from the scheduler and the
         second element is the number of inference steps.
     """
-    if timesteps is not None and sigmas is not None:
-        raise ValueError("Only one of `timesteps` or `sigmas` can be passed. Please choose one to set custom values")
+    # if timesteps is not None and sigmas is not None:
+    #     raise ValueError("Only one of `timesteps` or `sigmas` can be passed. Please choose one to set custom values")
+
     if timesteps is not None:
         accepts_timesteps = "timesteps" in set(inspect.signature(scheduler.set_timesteps).parameters.keys())
         if not accepts_timesteps:
@@ -254,6 +256,10 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
 
         return prompt_embeds, prompt_attention_mask
 
+
+    def with_lora(self, lora_path: str):
+        self.lora_path = lora_path
+        
     # Adapted from diffusers.pipelines.cogvideo.pipeline_cogvideox.CogVideoXPipeline.encode_prompt
     def encode_prompt(
         self,
@@ -638,9 +644,9 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
             latents,
         )
 
-        if self.do_classifier_free_guidance:
-            prompt_embeds = torch.cat([negative_prompt_embeds, prompt_embeds], dim=0)
-            prompt_attention_mask = torch.cat([negative_prompt_attention_mask, prompt_attention_mask], dim=0)
+        # if self.do_classifier_free_guidance:
+        #     prompt_embeds = torch.cat([negative_prompt_embeds, prompt_embeds], dim=0)
+        #     prompt_attention_mask = torch.cat([negative_prompt_attention_mask, prompt_attention_mask], dim=0)
 
         # 5. Prepare timestep
         # from https://github.com/genmoai/models/blob/075b6e36db58f1242921deff83a1066887b9c9e1/src/mochi_preview/infer.py#L77
@@ -668,11 +674,18 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
                 # Note: Mochi uses reversed timesteps. To ensure compatibility with methods like FasterCache, we need
                 # to make sure we're using the correct non-reversed timestep values.
                 self._current_timestep = 1000 - t
-                latent_model_input = torch.cat([latents] * 2) if self.do_classifier_free_guidance else latents
+                latent_model_input = latents
+                # latent_model_input = torch.cat([latents] * 2) if self.do_classifier_free_guidance else latents
                 # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
                 timestep = t.expand(latent_model_input.shape[0]).to(latents.dtype)
-
-                noise_pred = self.transformer(
+                # b_time = time.time()
+                self.enable_lora()
+                # self.disable_lora()
+ 
+                # e_time = time.time()
+                # print(f"Load lora weights time: {e_time - b_time}")
+                
+                noise_pred_text = self.transformer(
                     hidden_states=latent_model_input,
                     encoder_hidden_states=prompt_embeds,
                     timestep=timestep,
@@ -685,13 +698,33 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
                 for block in self.transformer.transformer_blocks:
                     attention_maps.append(block.attn1.processor.attn_weights)
                 self.attention_maps.append(attention_maps)
+
+
+                # if self.do_classifier_free_guidance:
+                #     noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
+                #     noise_pred = noise_pred_uncond + self.guidance_scale * (noise_pred_text - noise_pred_uncond)
+
+                # b_time = time.time()
+                self.disable_lora() # disable lora not only disabled lora also changed otherthings 
+                # e_time = time.time()
+                # print(f"Unload lora weights time: {e_time - b_time}")
+                
+                # predict the unconditioned (neg) noise
+                noise_pred_uncond = self.transformer(
+                    hidden_states=latent_model_input,
+                    encoder_hidden_states=negative_prompt_embeds,
+                    timestep=timestep,
+                    encoder_attention_mask=negative_prompt_attention_mask,
+                    attention_kwargs=attention_kwargs,
+                    return_dict=False,
+                )[0]
+                
+                noise_pred = noise_pred_uncond + self.guidance_scale * (noise_pred_text - noise_pred_uncond)
                 # Mochi CFG + Sampling runs in FP32
                 noise_pred = noise_pred.to(torch.float32)
-
-                if self.do_classifier_free_guidance:
-                    noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
-                    noise_pred = noise_pred_uncond + self.guidance_scale * (noise_pred_text - noise_pred_uncond)
-
+                
+                
+                
                 # compute the previous noisy sample x_t -> x_t-1
                 latents_dtype = latents.dtype
                 latents = self.scheduler.step(noise_pred, t, latents.to(torch.float32), return_dict=False)[0]
