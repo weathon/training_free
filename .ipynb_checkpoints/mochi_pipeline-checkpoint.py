@@ -680,7 +680,7 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
                 timestep = t.expand(latent_model_input.shape[0]).to(latents.dtype)
                 # b_time = time.time()
                 # self.enable_lora()
-                # self.set_adapters(["camflagued"], adapter_weights=[0.00])
+                self.set_adapters(["camflagued"], adapter_weights=[0.00])
                 
                 # self.disable_lora()
  
@@ -708,7 +708,7 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
 
                 # b_time = time.time()
                 # self.disable_lora() # disable lora not only disabled lora also changed otherthings 
-                # self.set_adapters(["camflagued"], adapter_weights=[0.00])
+                self.set_adapters(["camflagued"], adapter_weights=[0.00])
                 
                 # e_time = time.time()
                 # print(f"Unload lora weights time: {e_time - b_time}")
