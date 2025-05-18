@@ -71,10 +71,11 @@ for block in pipe.transformer.transformer_blocks:
     block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=indices, positive_mask=positive_mask) #here start_index + 1, end_index, because exclude the *
     # block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=torch.tensor([index])) 
 
+# no negative prompt and low guidance
 frames = pipe(prompt + ("" if random.random()<0.5 else " The animal is small and far away, making it even harder to see. "),
-            negative_prompt="main object standing out, colour or texture contrast against the background, easy to spot, looks different than the environment or other objects, findable, detectable, big and center, blury, out of focus, blurry, pixelated, low resolution, low quality, low detail, low fidelity, low definition, low clarity, high contrast", 
-            num_inference_steps=64,
-            guidance_scale=3, #lower guidance scale better results but lower quality 
+            negative_prompt="",#"main object standing out, colour or texture contrast against the background, easy to spot, looks different than the environment or other objects, findable, detectable, big and center, blury, out of focus, blurry, pixelated, low resolution, low quality, low detail, low fidelity, low definition, low clarity, high contrast", 
+            num_inference_steps=128,
+            guidance_scale=2, #lower guidance scale better results but lower quality 
             num_frames=30).frames[0]
 # lower guidance scale, blury but camflagued
 export_to_video(frames, f"res/mochi_{file_id:02d}.mp4", fps=30)
