@@ -71,8 +71,8 @@ for block in pipe.transformer.transformer_blocks:
     # block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=torch.tensor([index])) 
 frames = pipe(prompt + ("" if random.random()<0.5 else " The animal is small and far away, making it even harder to see. "),
             negative_prompt=neg_prompt + "blury, out of focus, blurry, pixelated, low resolution, low quality, low detail, low fidelity, low definition, low clarity, low sharpness, low contrast, low brightness, low saturation", 
-            num_inference_steps=30,
-            guidance_scale=6,
+            num_inference_steps=64,
+            guidance_scale=5,
             num_frames=60).frames[0]
 # lower guidance scale, blury but camflagued
 export_to_video(frames, f"res/mochi_{file_id:02d}.mp4", fps=30)
