@@ -664,9 +664,9 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
             latents,
         )
 
-        # if self.do_classifier_free_guidance:
-        #     prompt_embeds = torch.cat([negative_prompt_embeds, prompt_embeds], dim=0)
-        #     prompt_attention_mask = torch.cat([negative_prompt_attention_mask, prompt_attention_mask], dim=0)
+        if self.do_classifier_free_guidance:
+            prompt_embeds = torch.cat([negative_prompt_embeds, prompt_embeds], dim=0)
+            prompt_attention_mask = torch.cat([negative_prompt_attention_mask, prompt_attention_mask], dim=0)
 
         # 5. Prepare timestep
         # from https://github.com/genmoai/models/blob/075b6e36db58f1242921deff83a1066887b9c9e1/src/mochi_preview/infer.py#L77
@@ -694,8 +694,8 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
                 # Note: Mochi uses reversed timesteps. To ensure compatibility with methods like FasterCache, we need
                 # to make sure we're using the correct non-reversed timestep values.
                 self._current_timestep = 1000 - t
-                latent_model_input = latents
-                # latent_model_input = torch.cat([latents] * 2) if self.do_classifier_free_guidance else latents
+                # latent_model_input = latents
+                latent_model_input = torch.cat([latents] * 2) if self.do_classifier_free_guidance else latents
                 # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
                 timestep = t.expand(latent_model_input.shape[0]).to(latents.dtype)
                 # b_time = time.time()
@@ -708,7 +708,7 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
                 # e_time = time.time()
                 # print(f"Load lora weights time: {e_time - b_time}")
                 
-                noise_pred_text = self.transformer(
+                noise_pred = self.transformer(
                     hidden_states=latent_model_input,
                     encoder_hidden_states=prompt_embeds,
                     timestep=timestep,
@@ -723,9 +723,9 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
                 self.attention_maps.append(attention_maps)
 
 
-                # if self.do_classifier_free_guidance:
-                #     noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
-                #     noise_pred = noise_pred_uncond + self.guidance_scale * (noise_pred_text - noise_pred_uncond)
+                if self.do_classifier_free_guidance:
+                    noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
+                    noise_pred = noise_pred_uncond + self.guidance_scale * (noise_pred_text - noise_pred_uncond)
 
                 # b_time = time.time()
                 # self.disable_lora() # disable lora not only disabled lora also changed otherthings 
