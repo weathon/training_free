@@ -1,11 +1,7 @@
 import os
 import subprocess
 import random
-<<<<<<< HEAD
 path = "prompts"
-=======
-path = "../finetrainers/training/mochi-1/dataset/"
->>>>>>> 31e6ddb3b0b7aa1a4c847da72444dc4b29fa5f3c
 files = sorted(os.listdir(path))
 print(f"Found {len(files)} files")
 run_id = "".join(random.choices("abcdefghijklmnopqrstuvwxyz0123456789", k=8))

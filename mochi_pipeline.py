@@ -641,6 +641,15 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
             max_sequence_length=max_sequence_length,
             device=device,
         )
+        
+        uncond_prompt_embeds, uncond_prompt_attention_mask = self._get_t5_prompt_embeds(
+            "",
+            num_videos_per_prompt=num_videos_per_prompt,
+            max_sequence_length=max_sequence_length,
+            device=device,
+            dtype=prompt_embeds.dtype,
+        )
+        
         # 4. Prepare latent variables
         num_channels_latents = self.transformer.config.in_channels
         latents = self.prepare_latents(
@@ -727,7 +736,7 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
                 # print(f"Unload lora weights time: {e_time - b_time}")
                 
                 # predict the unconditioned (neg) noise
-                noise_pred_uncond = self.transformer(
+                noise_pred_neg = self.transformer(
                     hidden_states=latent_model_input,
                     encoder_hidden_states=negative_prompt_embeds,
                     timestep=timestep,
@@ -735,8 +744,18 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
                     attention_kwargs=attention_kwargs,
                     return_dict=False,
                 )[0]
+                # print(uncond_prompt_embeds.shape, uncond_prompt_attention_mask.shape, negative_prompt_embeds.shape, negative_prompt_attention_mask.shape)
+                # print(uncond_prompt_attention_mask, negative_prompt_attention_mask)
+                noise_pred_uncond = self.transformer(
+                    hidden_states=latent_model_input,
+                    encoder_hidden_states=uncond_prompt_embeds,
+                    timestep=timestep, 
+                    encoder_attention_mask=uncond_prompt_attention_mask,
+                    attention_kwargs=attention_kwargs,
+                    return_dict=False,
+                )[0]
                 
-                noise_pred = noise_pred_uncond + self.guidance_scale * (noise_pred_text - noise_pred_uncond)
+                noise_pred = noise_pred_uncond + self.guidance_scale * (noise_pred_text - 1.02 * noise_pred_neg)
                 # Mochi CFG + Sampling runs in FP32
                 noise_pred = noise_pred.to(torch.float32)
                 # print(noise_pred.max(), noise_pred.mean(), noise_pred.std())
