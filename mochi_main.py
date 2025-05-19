@@ -31,7 +31,7 @@ parser.add_argument("--filename", type=str)
 parser.add_argument("--run_id", type=str, default="mochi")
 args = parser.parse_args()
 filename = args.filename
-moca_image = os.path.join("/mnt/fastdata/original_moca/MoCA/JPEGImages", filename.replace("prompts/",""), "00001.jpg")
+moca_image = os.path.join("original_moca", filename.replace("prompts/",".jpg"))
 assert os.path.exists(moca_image), f"Image {moca_image} does not exist"
 
 wandb.init(project="mochi", resume=True, id=args.run_id)
