@@ -31,7 +31,8 @@ parser.add_argument("--filename", type=str)
 parser.add_argument("--run_id", type=str, default="mochi")
 args = parser.parse_args()
 filename = args.filename
-moca_image = os.path.join("/mnt/fastdata/original_moca/MoCA/JPEGImages", filename)
+moca_image = os.path.join("/mnt/fastdata/original_moca/MoCA/JPEGImages", filename.replace("prompts/",""), "00001.jpg")
+assert os.path.exists(moca_image), f"Image {moca_image} does not exist"
 
 wandb.init(project="mochi", resume=True, id=args.run_id)
 
@@ -207,7 +208,7 @@ export_to_video(video, f"res/mochi_fg_{file_id:02d}_map.mp4", fps=30)
 wandb.log({
     "video": wandb.Video(f"res/mochi_{file_id:02d}.mp4", caption=filename),
     "fg": wandb.Video(f"res/mochi_fg_{file_id:02d}_map.mp4"),
-    "moca": wandb.Video(moca_image),
+    "moca": wandb.Image(moca_image),
 })
 with open("file_id.txt", "w") as f:
     f.write(str(file_id + 1))
