@@ -79,7 +79,18 @@ def linear_quadratic_schedule(num_steps, threshold_noise, linear_steps=None):
     sigma_schedule = [1.0 - x for x in sigma_schedule]
     return sigma_schedule
 
+# https://www.reddit.com/r/StableDiffusion/comments/xalo78/fixing_excessive_contrastsaturation_resulting/
+def normalize_latent(x, max_val, quantile_val):
+    x = x.detach().clone()
+    for i in range(x.shape[0]):
+        if x[[i], :].std() > 1.0:
+            x[[i], :] = x[[i], :] / x[[i], :].std()
+        s = torch.quantile(torch.abs(x[[i], :]), quantile_val)
+        s = torch.maximum(s, torch.ones_like(s) * max_val)
+        x[[i], :] = x[[i], :] / (s / max_val)
+    return x
 
+# 
 # Copied from diffusers.pipelines.stable_diffusion.pipeline_stable_diffusion.retrieve_timesteps
 def retrieve_timesteps(
     scheduler,
@@ -680,7 +691,7 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
                 timestep = t.expand(latent_model_input.shape[0]).to(latents.dtype)
                 # b_time = time.time()
                 # self.enable_lora()
-                self.set_adapters(["camflagued"], adapter_weights=[0.04])
+                # self.set_adapters(["camflagued"], adapter_weights=[1])
                 
                 # self.disable_lora()
  
@@ -708,7 +719,7 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
 
                 # b_time = time.time()
                 # self.disable_lora() # disable lora not only disabled lora also changed otherthings 
-                self.set_adapters(["camflagued"], adapter_weights=[0.01])
+                # self.set_adapters(["camflagued"], adapter_weights=[0.5])
                 
                 # e_time = time.time()
                 # print(f"Unload lora weights time: {e_time - b_time}")
@@ -726,13 +737,17 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
                 noise_pred = noise_pred_uncond + self.guidance_scale * (noise_pred_text - noise_pred_uncond)
                 # Mochi CFG + Sampling runs in FP32
                 noise_pred = noise_pred.to(torch.float32)
-                
-                
+                # print(noise_pred.max(), noise_pred.mean(), noise_pred.std())
                 
                 # compute the previous noisy sample x_t -> x_t-1
                 latents_dtype = latents.dtype
                 latents = self.scheduler.step(noise_pred, t, latents.to(torch.float32), return_dict=False)[0]
+                # latents = latents.to(torch.float32)
+                # print(latents_dtype)
+                # print(f"latents max: {latents.max()}, latents mean: {latents.mean()}, latents std: {latents.std()}")
+                # latents = normalize_latent(latents, 4, 0.8)
                 latents = latents.to(latents_dtype)
+                
 
                 if latents.dtype != latents_dtype:
                     if torch.backends.mps.is_available():

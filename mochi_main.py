@@ -5,7 +5,7 @@ from diffusers.utils import export_to_video
 import math
 pipe = MochiPipeline.from_pretrained("genmo/mochi-1-preview", torch_dtype=torch.bfloat16).to("cuda")
 pipe.load_lora_weights("weathon/mochi-lora", adapter_name="camflagued")
-pipe.set_adapters(["camflagued"], adapter_weights=[0.01])
+pipe.set_adapters(["camflagued"], adapter_weights=[0.2])
 print("Loaded model")
 import os
 import wandb
@@ -20,7 +20,6 @@ pipe.enable_model_cpu_offload()
 
 
 
-
 from mochi_processor import MochiAttnProcessor2_0
 from transformers import T5TokenizerFast
 tokenizer = T5TokenizerFast.from_pretrained("genmo/mochi-1-preview", subfolder="tokenizer")
@@ -32,6 +31,7 @@ parser.add_argument("--filename", type=str)
 parser.add_argument("--run_id", type=str, default="mochi")
 args = parser.parse_args()
 filename = args.filename
+moca_image = os.path.join("/mnt/fastdata/original_moca/MoCA/JPEGImages", filename)
 
 wandb.init(project="mochi", resume=True, id=args.run_id)
 
@@ -72,9 +72,9 @@ for block in pipe.transformer.transformer_blocks:
     # block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=torch.tensor([index])) 
 frames = pipe(prompt + ("" if random.random()<0.5 else " The animal is small and far away, making it even harder to see. "),
             negative_prompt="standing out, colour or texture contrast against the background, easy to spot, looks different than the environment or other objects, easy to find, easy to detect, big and center, blury, out of focus, blurry, pixelated, low resolution, low quality, low detail, low fidelity, low definition, low clarity, high contrast", 
-            num_inference_steps=64,
-            guidance_scale=7,
-            num_frames=30).frames[0]
+            num_inference_steps=32,
+            guidance_scale=6,
+            num_frames=37).frames[0]
 # lower guidance scale, blury but camflagued
 export_to_video(frames, f"res/mochi_{file_id:02d}.mp4", fps=30)
 # blury image might be from the negative prompt 
@@ -205,10 +205,9 @@ fg = normalize(fg)
 video = compose_frames(frames, fg)
 export_to_video(video, f"res/mochi_fg_{file_id:02d}_map.mp4", fps=30)
 wandb.log({
-    "video": wandb.Video(f"res/mochi_{file_id:02d}.mp4"),
+    "video": wandb.Video(f"res/mochi_{file_id:02d}.mp4", caption=filename),
     "fg": wandb.Video(f"res/mochi_fg_{file_id:02d}_map.mp4"),
-    "filename": filename,
+    "moca": wandb.Video(moca_image),
 })
-
 with open("file_id.txt", "w") as f:
     f.write(str(file_id + 1))
