@@ -72,8 +72,10 @@ for block in pipe.transformer.transformer_blocks:
     block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=indices, positive_mask=positive_mask) #here start_index + 1, end_index, because exclude the *
     # block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=torch.tensor([index])) 
 
-frames = pipe(prompt + ("" if random.random()<0.5 else " The animal is small and far away, making it even harder to see. "),
-            negative_prompt="standing out, colour or texture contrast against the background, revealed, uncovered, looks different than the environment or other objects, exhibit, big and center, blury, out of focus, blurry, pixelated, low resolution, low quality, low detail, low fidelity, low definition, low clarity, high contrast, tha main object looks nothing like the background, foggy, unnature, abnormal, rendered, odd, strange look, morph in", 
+base = "high quality, 8k, nature, photo realistic, clear lens"
+
+frames = pipe(prompt + base + ("" if random.random()<0.5 else " The animal is small and far away, making it even harder to see. "),
+            negative_prompt="deformabled, standing out, colour or texture contrast against the background, revealed, uncovered, exhibit, big and center, blury, out of focus, pixelated, low resolution, low quality, low detail, low fidelity, low definition, high contrast, tha main object looks nothing like the background, foggy, unnature, abnormal, rendered, odd, strange look, morph in, dirty lens", 
             num_inference_steps=32,
             guidance_scale=8,
             num_frames=37).frames[0]

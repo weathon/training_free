@@ -746,18 +746,18 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
                 )[0]
                 # print(uncond_prompt_embeds.shape, uncond_prompt_attention_mask.shape, negative_prompt_embeds.shape, negative_prompt_attention_mask.shape)
                 # print(uncond_prompt_attention_mask, negative_prompt_attention_mask)
-                noise_pred_uncond = self.transformer(
-                    hidden_states=latent_model_input,
-                    encoder_hidden_states=uncond_prompt_embeds,
-                    timestep=timestep, 
-                    encoder_attention_mask=uncond_prompt_attention_mask,
-                    attention_kwargs=attention_kwargs,
-                    return_dict=False,
-                )[0]
+                # noise_pred_uncond = self.transformer(
+                #     hidden_states=latent_model_input,
+                #     encoder_hidden_states=uncond_prompt_embeds,
+                #     timestep=timestep, 
+                #     encoder_attention_mask=uncond_prompt_attention_mask,
+                #     attention_kwargs=attention_kwargs,
+                #     return_dict=False,
+                # )[0]
                 
-                noise_pred = noise_pred_uncond + self.guidance_scale * (noise_pred_text - 1.02 * noise_pred_neg)
+                noise_pred = noise_pred_neg + self.guidance_scale * (noise_pred_text - 1.01 * noise_pred_neg)
                 # Mochi CFG + Sampling runs in FP32
-                noise_pred = noise_pred.to(torch.float32)
+                # noise_pred = noise_pred.to(torch.float32)
                 # print(noise_pred.max(), noise_pred.mean(), noise_pred.std())
                 
                 # compute the previous noisy sample x_t -> x_t-1
