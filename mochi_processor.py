@@ -98,13 +98,13 @@ class MochiAttnProcessor2_0:
             attn_output = F.pad(attn_output, (0, 0, 0, total_length - valid_sequence_length))
             attn_outputs.append(attn_output)
 
-
-        interested_key = encoder_query[1, :, self.token_index_of_interest]
-        image_queries = query[1]
-        attention_scores = torch.einsum('hqd,hkd->hqk', image_queries, interested_key).unsqueeze(0)
-        # self.attn_weights = attention_scores.permute(0, 1, 3, 2)
-        self.attn_weights = F.softmax(attention_scores / math.sqrt(interested_key.size(-1)), dim=-1).permute(0, 1, 3, 2)
-        
+            if self.token_index_of_interest.max() < valid_encoder_key.shape[2]:
+                interested_key = valid_encoder_key[0, :, self.token_index_of_interest]
+                image_queries = query[0]
+                attention_scores = torch.einsum('hqd,hkd->hqk', image_queries, interested_key).unsqueeze(0)
+                # self.attn_weights = attention_scores.permute(0, 1, 3, 2)
+                self.attn_weights = F.softmax(attention_scores / math.sqrt(interested_key.size(-1)), dim=-1).permute(0, 1, 3, 2)
+                
             
         # # should we switch from image atten to the text? that makes more sense 
         # # https://arxiv.org/pdf/2408.14826 use image as query, text as key
