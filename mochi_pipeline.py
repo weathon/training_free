@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
- 
+
 import inspect
 from typing import Any, Callable, Dict, List, Optional, Union
 import time 
@@ -694,7 +694,7 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
                 # Note: Mochi uses reversed timesteps. To ensure compatibility with methods like FasterCache, we need
                 # to make sure we're using the correct non-reversed timestep values.
                 self._current_timestep = 1000 - t
-                # latent_model_input = latents
+                latent_model_input = latents
                 # latent_model_input = torch.cat([latents] * 2) if self.do_classifier_free_guidance else latents
                 # broadcast to batch dimension in a way that's compatible with ONNX/Core ML
                 timestep = t.expand(latent_model_input.shape[0]).to(latents.dtype)
@@ -708,7 +708,7 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
                 # e_time = time.time()
                 # print(f"Load lora weights time: {e_time - b_time}")
                 
-                noise_pred = self.transformer(
+                noise_pred_text = self.transformer(
                     hidden_states=latent_model_input,
                     encoder_hidden_states=prompt_embeds,
                     timestep=timestep,
@@ -723,9 +723,9 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
                 self.attention_maps.append(attention_maps)
 
 
-                if self.do_classifier_free_guidance:
-                    noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
-                    noise_pred = noise_pred_uncond + self.guidance_scale * (noise_pred_text - noise_pred_uncond)
+                # if self.do_classifier_free_guidance:
+                #     noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
+                #     noise_pred = noise_pred_uncond + self.guidance_scale * (noise_pred_text - noise_pred_uncond)
 
                 # b_time = time.time()
                 # self.disable_lora() # disable lora not only disabled lora also changed otherthings 
