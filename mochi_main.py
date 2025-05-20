@@ -63,8 +63,7 @@ except:
     emphasize_end_index = tokenizer.tokenize(prompt).index(").")
 
 
-
-negative_prompt = "deformabled, (standing out, colour or texture contrast against the background, revealed, uncovered, exhibit, big and center, tha main object looks nothing like the background) blury, out of focus, pixelated, low resolution, low quality, low detail, low fidelity, low definition, high contrast, foggy, unnature, abnormal, rendered, odd, strange look, morph in, dirty lens, noisy"
+negative_prompt = neg_prompt + " deformabled, (standing out, colour or texture contrast against the background, revealed, uncovered, exhibit, big and center, tha main object looks nothing like the background) blury, out of focus, pixelated, low resolution, low quality, low detail, low fidelity, low definition, high contrast, foggy, unnature, abnormal, rendered, odd, strange look, morph in, dirty lens, noisy"
 
 emphasize_neg_start_index = tokenizer.tokenize(negative_prompt).index("▁(")
 emphasize_neg_end_index = tokenizer.tokenize(negative_prompt).index(")")
@@ -85,7 +84,7 @@ for block in pipe.transformer.transformer_blocks:
     block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=indices, positive_mask=positive_mask) #here start_index + 1, end_index, because exclude the *
     # block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=torch.tensor([index])) 
 
-base = "high quality, 8k, nature, photo realistic, clear lens, clear"
+base = "high quality, 8k, nature, photo realistic, clear lens"
 
 frames = pipe(prompt + base + ("" if random.random()<0.5 else " The animal is small and far away, making it even harder to see. "),
             negative_prompt=negative_prompt, 
