@@ -4,7 +4,7 @@ from mochi_pipeline import MochiPipeline
 from diffusers.utils import export_to_video
 import math
 pipe = MochiPipeline.from_pretrained("genmo/mochi-1-preview", torch_dtype=torch.bfloat16).to("cuda")
-pipe.load_lora_weights("weathon/mochi-lora", adapter_name="camflagued")
+# pipe.load_lora_weights("weathon/mochi-lora", adapter_name="camflagued")
 # pipe.set_adapters(["camflagued"], adapter_weights=[0.5]) 
 print("Loaded model")
 import os
@@ -122,11 +122,11 @@ maps = pipe.attention_maps
 for step in tqdm.tqdm(range(max(len(maps) - 10, 0), len(maps))):
     for layer in range(len(maps[step])): 
         # print(maps[step][layer].shape)# [B, H, K, Q]
-        map = maps[step][layer][0].mean(0)[positive_mask==1].sum(0) # use sum, because in it it was softmax and spread outed
+        map = maps[step][layer][0].mean(0)[0] # use sum, because in it it was softmax and spread outed
         # print(maps[step][layer][0].mean(0)[positive_mask==1].shape) # need to use bool!
         extracted_positive_maps.append(map.cpu().float().numpy().reshape(-1, frames[0].size[1]//16, frames[0].size[0]//16))
         
-        map = maps[step][layer][0].mean(0)[negative_mask==1].sum(0) 
+        map = maps[step][layer][0].mean(0)[1]
         extracted_negative_maps.append(map.cpu().float().numpy().reshape(-1, frames[0].size[1]//16, frames[0].size[0]//16))
 
         # assert torch.all(maps[step][layer][0].mean(0).sum(0) >= 0.99), maps[step][layer][0].mean(0).sum(0)

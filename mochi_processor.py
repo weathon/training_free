@@ -103,9 +103,12 @@ class MochiAttnProcessor2_0:
                 image_queries = query[0]
                 attention_scores = torch.einsum('hqd,hkd->hqk', image_queries, interested_key).unsqueeze(0)
                 # self.attn_weights = attention_scores.permute(0, 1, 3, 2)
-                self.attn_weights = F.softmax(attention_scores / math.sqrt(interested_key.size(-1)), dim=-1).permute(0, 1, 3, 2)
+                attn_weights = F.softmax(attention_scores / math.sqrt(interested_key.size(-1)), dim=-1).permute(0, 1, 3, 2)
+                pos_attn_weights = attn_weights[:, :, self.positive_mask==1].sum(2).unsqueeze(2)
+                neg_attn_weights = attn_weights[:, :, self.positive_mask==0].sum(2).unsqueeze(2)
+                self.attn_weights = torch.cat([pos_attn_weights, neg_attn_weights], dim=-2)
+                # print("attn_weights", self.attn_weights.shape)
                 
-            
         # # should we switch from image atten to the text? that makes more sense 
         # # https://arxiv.org/pdf/2408.14826 use image as query, text as key
         # # print(encoder_query.shape, valid_encoder_query.shape, valid_prompt_token_indices)
