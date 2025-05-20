@@ -5,7 +5,7 @@ from diffusers.utils import export_to_video
 import math
 pipe = MochiPipeline.from_pretrained("genmo/mochi-1-preview", torch_dtype=torch.bfloat16).to("cuda")
 pipe.load_lora_weights("weathon/mochi-lora", adapter_name="camflagued")
-pipe.set_adapters(["camflagued"], adapter_weights=[0.2])
+pipe.set_adapters(["camflagued"], adapter_weights=[0.5])
 print("Loaded model")
 import os
 import wandb
@@ -64,7 +64,7 @@ except:
 
 
 
-negative_prompt = "deformabled, (standing out, colour or texture contrast against the background, revealed, uncovered, exhibit, big and center) blury, out of focus, pixelated, low resolution, low quality, low detail, low fidelity, low definition, high contrast, tha main object looks nothing like the background, foggy, unnature, abnormal, rendered, odd, strange look, morph in, dirty lens, noisy"
+negative_prompt = "deformabled, (standing out, colour or texture contrast against the background, revealed, uncovered, exhibit, big and center, tha main object looks nothing like the background) blury, out of focus, pixelated, low resolution, low quality, low detail, low fidelity, low definition, high contrast, foggy, unnature, abnormal, rendered, odd, strange look, morph in, dirty lens, noisy"
 
 emphasize_neg_start_index = tokenizer.tokenize(negative_prompt).index("▁(")
 emphasize_neg_end_index = tokenizer.tokenize(negative_prompt).index(")")

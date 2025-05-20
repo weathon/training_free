@@ -477,7 +477,7 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
         return self._guidance_scale > 1.0
 
     @property
-    def num_timesteps(self):
+    def num_timesteps(self): 
         return self._num_timesteps
 
     @property
@@ -648,7 +648,7 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
         print(emphasize_indices)
         prompt_embeds[:, emphasize_indices[0]:emphasize_indices[1], :] = prompt_embeds[:, emphasize_indices[0]:emphasize_indices[1], :] * 2
         negative_prompt_embeds[:, emphasize_neg_indices[0]:emphasize_neg_indices[1], :] = negative_prompt_embeds[:, emphasize_neg_indices[0]:emphasize_neg_indices[1], :] * 2
-        
+
         # ( 
         #     prompt_embeds,
         #     prompt_neg_embeds,
@@ -764,21 +764,23 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
                 )[0]
                 # print(uncond_prompt_embeds.shape, uncond_prompt_attention_mask.shape, negative_prompt_embeds.shape, negative_prompt_attention_mask.shape)
                 # print(uncond_prompt_attention_mask, negative_prompt_attention_mask)
-                # noise_pred_uncond = self.transformer(
-                #     hidden_states=latent_model_input,
-                #     encoder_hidden_states=uncond_prompt_embeds,
-                #     timestep=timestep, 
-                #     encoder_attention_mask=uncond_prompt_attention_mask,
-                #     attention_kwargs=attention_kwargs,
-                #     return_dict=False,
-                # )[0]
+                noise_pred_uncond = self.transformer(
+                    hidden_states=latent_model_input,
+                    encoder_hidden_states=uncond_prompt_embeds,
+                    timestep=timestep, 
+                    encoder_attention_mask=uncond_prompt_attention_mask,
+                    attention_kwargs=attention_kwargs,
+                    return_dict=False,
+                )[0]
                 
-                original_pred = noise_pred_neg + self.guidance_scale * (noise_pred_text - noise_pred_neg) 
-                original_norm = torch.linalg.norm(original_pred)
+                noise_pred = noise_pred_uncond + self.guidance_scale * (noise_pred_text - noise_pred_uncond) - 1.2 * self.guidance_scale * (noise_pred_neg - noise_pred_uncond) 
+                # original_pred = noise_pred_neg + self.guidance_scale * (noise_pred_text - noise_pred_neg) 
+                # original_norm = torch.linalg.norm(original_pred, dim=1)
 
-                noise_pred = noise_pred_neg + self.guidance_scale * (noise_pred_text + (1.1 * -noise_pred_neg))
-                noise_pred = noise_pred / torch.linalg.norm(noise_pred) * original_norm
+                # noise_pred = noise_pred_neg + self.guidance_scale * (noise_pred_text + (1.1 * -noise_pred_neg))
+                # noise_pred = noise_pred / torch.linalg.norm(noise_pred, dim=1) * original_norm
                 
+                # clipping or norm, L1 or L2? This is whole tensor, should i do pixel wise similar to pervious adaptive guidance
                 # Mochi CFG + Sampling runs in FP32
                 # noise_pred = noise_pred.to(torch.float32)
                 # print(noise_pred.max(), noise_pred.mean(), noise_pred.std()) 
