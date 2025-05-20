@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from pdb import set_trace as bp
 import inspect
 from typing import Any, Callable, Dict, List, Optional, Union
 import time 
@@ -646,8 +647,8 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
         )
 
         print(emphasize_indices)
-        prompt_embeds[:, emphasize_indices[0]:emphasize_indices[1], :] = prompt_embeds[:, emphasize_indices[0]:emphasize_indices[1], :] * 2
-        negative_prompt_embeds[:, emphasize_neg_indices[0]:emphasize_neg_indices[1], :] = negative_prompt_embeds[:, emphasize_neg_indices[0]:emphasize_neg_indices[1], :] * 2
+        prompt_embeds[:, emphasize_indices[0]:emphasize_indices[1], :] = prompt_embeds[:, emphasize_indices[0]:emphasize_indices[1], :]* 1.5
+        negative_prompt_embeds[:, emphasize_neg_indices[0]:emphasize_neg_indices[1], :] = negative_prompt_embeds[:, emphasize_neg_indices[0]:emphasize_neg_indices[1], :]* 1.5
 
         # ( 
         #     prompt_embeds,
@@ -739,8 +740,10 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
                 for block in self.transformer.transformer_blocks:
                     attention_maps.append(block.attn1.processor.attn_weights)
                 self.attention_maps.append(attention_maps)
-
-
+                weights = torch.cat(attention_maps, dim=0).mean(dim=(0,1))[self.transformer.transformer_blocks[0].attn1.processor.positive_mask==1].sum(0)
+                weights = weights.reshape(1, noise_pred_text.shape[2], noise_pred_text.shape[3]//2, noise_pred_text.shape[4]//2)
+                weights = torch.nn.functional.interpolate(weights, size=(noise_pred_text.shape[3], noise_pred_text.shape[4]), mode='bilinear', align_corners=False)
+                weights = weights.unsqueeze(0).repeat(1, 12, 1, 1, 1)
                 # if self.do_classifier_free_guidance:
                 #     noise_pred_uncond, noise_pred_text = noise_pred.chunk(2)
                 #     noise_pred = noise_pred_uncond + self.guidance_scale * (noise_pred_text - noise_pred_uncond)
@@ -773,12 +776,15 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
                     return_dict=False,
                 )[0]
                 
-                noise_pred = noise_pred_uncond + self.guidance_scale * (noise_pred_text - noise_pred_uncond) - 1.2 * self.guidance_scale * (noise_pred_neg - noise_pred_uncond) 
+                original_pred = noise_pred_uncond + self.guidance_scale * (noise_pred_text - noise_pred_uncond)
+                
                 # original_pred = noise_pred_neg + self.guidance_scale * (noise_pred_text - noise_pred_neg) 
-                # original_norm = torch.linalg.norm(original_pred, dim=1)
-
+                original_norm = torch.linalg.norm(original_pred, dim=1)
+                negative_pred =  - 1.3 * self.guidance_scale * (noise_pred_neg - noise_pred_uncond)  
+                # negative_pred =  - (1 + weights * 0.3) * self.guidance_scale * (noise_pred_neg - noise_pred_uncond)  #missed the negative sign, it become all whote 
                 # noise_pred = noise_pred_neg + self.guidance_scale * (noise_pred_text + (1.1 * -noise_pred_neg))
-                # noise_pred = noise_pred / torch.linalg.norm(noise_pred, dim=1) * original_norm
+                noise_pred = original_pred + negative_pred
+                noise_pred = noise_pred / torch.linalg.norm(noise_pred, dim=1) * original_norm
                 
                 # clipping or norm, L1 or L2? This is whole tensor, should i do pixel wise similar to pervious adaptive guidance
                 # Mochi CFG + Sampling runs in FP32

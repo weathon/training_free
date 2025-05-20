@@ -5,7 +5,7 @@ from diffusers.utils import export_to_video
 import math
 pipe = MochiPipeline.from_pretrained("genmo/mochi-1-preview", torch_dtype=torch.bfloat16).to("cuda")
 pipe.load_lora_weights("weathon/mochi-lora", adapter_name="camflagued")
-pipe.set_adapters(["camflagued"], adapter_weights=[0.5])
+# pipe.set_adapters(["camflagued"], adapter_weights=[0.5]) 
 print("Loaded model")
 import os
 import wandb
@@ -93,6 +93,7 @@ frames = pipe(prompt + base + ("" if random.random()<0.5 else " The animal is sm
             guidance_scale=6,
             emphasize_indices=(emphasize_start_index, emphasize_end_index),
             emphasize_neg_indices=(emphasize_neg_start_index, emphasize_neg_end_index),
+            generator=torch.manual_seed(19890604),
             num_frames=37).frames[0]
 # lower guidance scale, blury but camflagued
 export_to_video(frames, f"res/mochi_{file_id:02d}.mp4", fps=30)
