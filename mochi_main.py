@@ -5,7 +5,7 @@ from diffusers.utils import export_to_video
 import math
 pipe = MochiPipeline.from_pretrained("genmo/mochi-1-preview", torch_dtype=torch.bfloat16).to("cuda")
 pipe.load_lora_weights("weathon/mochi-lora", adapter_name="camflagued")
-pipe.set_adapters(["camflagued"], adapter_weights=[0.2])
+# pipe.set_adapters(["camflagued"], adapter_weights=[0.2])
 print("Loaded model")
 import os
 import wandb
@@ -48,13 +48,19 @@ try:
 except FileNotFoundError:
     file_id = 1
     
+print(tokenizer.tokenize(prompt))
+
 positive_start_index = tokenizer.tokenize(prompt).index("▁*")
 positive_end_index = tokenizer.tokenize(prompt).index("*")
 
 negative_start_index = tokenizer.tokenize(prompt).index("▁+")
 negative_end_index = tokenizer.tokenize(prompt).index("+")
 
-print(tokenizer.tokenize(prompt))
+emphasize_start_index = tokenizer.tokenize(prompt).index("▁(")
+try:
+    emphasize_end_index = tokenizer.tokenize(prompt).index(")")
+except:
+    emphasize_end_index = tokenizer.tokenize(prompt).index(").")
 
 
 indices = torch.tensor(list(range(positive_start_index + 1, positive_end_index)) + list(range(negative_start_index + 1, negative_end_index)))# + 1 # plus one because of the <extra_id_0> token
@@ -72,12 +78,13 @@ for block in pipe.transformer.transformer_blocks:
     block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=indices, positive_mask=positive_mask) #here start_index + 1, end_index, because exclude the *
     # block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=torch.tensor([index])) 
 
-base = "high quality, 8k, nature, photo realistic, clear lens"
+base = "high quality, 8k, nature, photo realistic, clear lens, clear"
 
 frames = pipe(prompt + base + ("" if random.random()<0.5 else " The animal is small and far away, making it even harder to see. "),
-            negative_prompt="deformabled, standing out, colour or texture contrast against the background, revealed, uncovered, exhibit, big and center, blury, out of focus, pixelated, low resolution, low quality, low detail, low fidelity, low definition, high contrast, tha main object looks nothing like the background, foggy, unnature, abnormal, rendered, odd, strange look, morph in, dirty lens", 
-            num_inference_steps=32,
-            guidance_scale=8,
+            negative_prompt="deformabled, standing out, colour or texture contrast against the background, revealed, uncovered, exhibit, big and center, blury, out of focus, pixelated, low resolution, low quality, low detail, low fidelity, low definition, high contrast, tha main object looks nothing like the background, foggy, unnature, abnormal, rendered, odd, strange look, morph in, dirty lens, noisy", 
+            num_inference_steps=64,
+            guidance_scale=6,
+            emphasize_indices=(emphasize_start_index, emphasize_end_index),
             num_frames=37).frames[0]
 # lower guidance scale, blury but camflagued
 export_to_video(frames, f"res/mochi_{file_id:02d}.mp4", fps=30)

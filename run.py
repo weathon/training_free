@@ -4,6 +4,7 @@ import random
 from shutil import copy
 path = "prompts"
 files = sorted(os.listdir(path))
+random.shuffle(files)
 print(f"Found {len(files)} files")
 run_id = "".join(random.choices("abcdefghijklmnopqrstuvwxyz0123456789", k=8))
 print(f"Run ID: {run_id}")

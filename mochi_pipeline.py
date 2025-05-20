@@ -19,6 +19,7 @@ import numpy as np
 import torch
 from transformers import T5EncoderModel, T5TokenizerFast
 from mochi_processor import MochiAttnProcessor2_0
+from sd_embed.embedding_funcs import get_weighted_text_embeddings_sdxl
 
 from diffusers.callbacks import MultiPipelineCallbacks, PipelineCallback
 from diffusers.loaders import Mochi1LoraLoaderMixin
@@ -516,6 +517,7 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
         callback_on_step_end: Optional[Callable[[int, int, Dict], None]] = None,
         callback_on_step_end_tensor_inputs: List[str] = ["latents"],
         max_sequence_length: int = 256,
+        emphasize_indices = None,
     ):
         r"""
         Function invoked when calling the pipeline for generation.
@@ -623,7 +625,7 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
             batch_size = prompt_embeds.shape[0]
 
         device = self._execution_device
-        # 3. Prepare text embeddings
+        # # 3. Prepare text embeddings
         (
             prompt_embeds,
             prompt_attention_mask,
@@ -641,6 +643,21 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
             max_sequence_length=max_sequence_length,
             device=device,
         )
+
+        print(emphasize_indices)
+        prompt_embeds[:, emphasize_indices[0]:emphasize_indices[1], :] = prompt_embeds[:, emphasize_indices[0]:emphasize_indices[1], :] * 2
+        negative_prompt_embeds = negative_prompt_embeds * 2
+
+        # ( 
+        #     prompt_embeds,
+        #     prompt_neg_embeds,
+        #     pooled_prompt_embeds,
+        #     negative_pooled_prompt_embeds
+        # ) = get_weighted_text_embeddings_sdxl(
+        #     self,
+        #     prompt=prompt,
+        #     neg_prompt=negative_prompt
+        # )
         
         uncond_prompt_embeds, uncond_prompt_attention_mask = self._get_t5_prompt_embeds(
             "",
@@ -755,10 +772,15 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
                 #     return_dict=False,
                 # )[0]
                 
-                noise_pred = noise_pred_neg + self.guidance_scale * (noise_pred_text - 1.01 * noise_pred_neg)
+                original_pred = noise_pred_neg + self.guidance_scale * (noise_pred_text - noise_pred_neg) 
+                original_norm = torch.linalg.norm(original_pred)
+
+                noise_pred = noise_pred_neg + self.guidance_scale * (noise_pred_text + (1.1 * -noise_pred_neg))
+                noise_pred = noise_pred / torch.linalg.norm(noise_pred) * original_norm
+                
                 # Mochi CFG + Sampling runs in FP32
                 # noise_pred = noise_pred.to(torch.float32)
-                # print(noise_pred.max(), noise_pred.mean(), noise_pred.std())
+                # print(noise_pred.max(), noise_pred.mean(), noise_pred.std()) 
                 
                 # compute the previous noisy sample x_t -> x_t-1
                 latents_dtype = latents.dtype
