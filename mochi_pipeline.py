@@ -518,6 +518,7 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
         callback_on_step_end_tensor_inputs: List[str] = ["latents"],
         max_sequence_length: int = 256,
         emphasize_indices = None,
+        emphasize_neg_indices = None,
     ):
         r"""
         Function invoked when calling the pipeline for generation.
@@ -646,8 +647,8 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
 
         print(emphasize_indices)
         prompt_embeds[:, emphasize_indices[0]:emphasize_indices[1], :] = prompt_embeds[:, emphasize_indices[0]:emphasize_indices[1], :] * 2
-        negative_prompt_embeds = negative_prompt_embeds * 2
-
+        negative_prompt_embeds[:, emphasize_neg_indices[0]:emphasize_neg_indices[1], :] = negative_prompt_embeds[:, emphasize_neg_indices[0]:emphasize_neg_indices[1], :] * 2
+        
         # ( 
         #     prompt_embeds,
         #     prompt_neg_embeds,
