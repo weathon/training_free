@@ -41,7 +41,7 @@ with open(filename, "r") as f:
     
 prompt = json.loads(_prompt)["pos_prompt"]
 neg_prompt = json.loads(_prompt)["neg_prompt"]
-
+print(prompt)
 try:
     with open("file_id.txt", "r") as f:
         file_id = int(f.read())
@@ -84,7 +84,7 @@ for block in pipe.transformer.transformer_blocks:
     block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=indices, positive_mask=positive_mask) #here start_index + 1, end_index, because exclude the *
     # block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=torch.tensor([index])) 
 
-base = "high quality, 8k, nature, photo realistic, clear lens"
+base = "high quality, 8k, nature, photo realistic, clear lens, in focus"
 
 frames = pipe(prompt + base + ("" if random.random()<0.5 else " The animal is small and far away, making it even harder to see. "),
             negative_prompt=negative_prompt, 
