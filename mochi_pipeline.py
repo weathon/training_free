@@ -646,8 +646,8 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
         )
 
         print(emphasize_indices)
-        prompt_embeds[:, emphasize_indices[0]:emphasize_indices[1], :] = prompt_embeds[:, emphasize_indices[0]:emphasize_indices[1], :]* 1.5
-        negative_prompt_embeds[:, emphasize_neg_indices[0]:emphasize_neg_indices[1], :] = negative_prompt_embeds[:, emphasize_neg_indices[0]:emphasize_neg_indices[1], :]* 1.5
+        prompt_embeds[:, emphasize_indices[0]:emphasize_indices[1], :] = prompt_embeds[:, emphasize_indices[0]:emphasize_indices[1], :]* 1.2
+        negative_prompt_embeds[:, emphasize_neg_indices[0]:emphasize_neg_indices[1], :] = negative_prompt_embeds[:, emphasize_neg_indices[0]:emphasize_neg_indices[1], :]* 1.2
 
         # ( 
         #     prompt_embeds,
