@@ -11,9 +11,9 @@ random.shuffle(files)
 print(f"Found {len(files)} files")
 os.makedirs("original_moca", exist_ok=True)
 
-for file in files:
-    full_file_path = os.path.join(path, file)
-    subprocess.run(["python", "mochi_main.py", "--filename", full_file_path, "--run_id", run_id]) 
-    # moca_image = os.path.join("/mnt/fastdata/original_moca/MoCA/JPEGImages", file, "00001.jpg")
-    # copy(moca_image, os.path.join("original_moca", file + ".jpg"))
-    
+for negative_guidance_scale in [0, 3, 4, 5, 6]:
+    for file in files[:10]:
+        full_file_path = os.path.join(path, file)
+        subprocess.run(["python", "mochi_main.py", "--filename", full_file_path, "--run_id", run_id, "--negative_guidance_scale", str(negative_guidance_scale)], check=True)
+
+        

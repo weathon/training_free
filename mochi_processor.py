@@ -3,6 +3,7 @@ import torch.nn.functional as F
 from typing import Optional
 import torch
 import math
+from pdb import set_trace as bp
 
 class MochiAttnProcessor2_0:
     """Attention processor used in Mochi."""
@@ -77,7 +78,7 @@ class MochiAttnProcessor2_0:
         total_length = sequence_length + encoder_sequence_length
 
         batch_size, heads, _, dim = query.shape
-        attn_outputs = []
+        attn_outputs = [] 
         for idx in range(batch_size):
             mask = attention_mask[idx][None, :]
             valid_prompt_token_indices = torch.nonzero(mask.flatten(), as_tuple=False).flatten()
@@ -101,12 +102,24 @@ class MochiAttnProcessor2_0:
             if self.token_index_of_interest.max() < valid_encoder_key.shape[2]:
                 interested_key = valid_encoder_key[0, :, self.token_index_of_interest]
                 image_queries = query[0]
+                
                 attention_scores = torch.einsum('hqd,hkd->hqk', image_queries, interested_key).unsqueeze(0)
+                # for global which should be key which should be query try both
+                # self.global_attn_weights = global_attention_scores.mean(-1)
+                # attention_scores = global_attention_scores[:,:,self.token_index_of_interest]
                 # self.attn_weights = attention_scores.permute(0, 1, 3, 2)
                 attn_weights = F.softmax(attention_scores / math.sqrt(interested_key.size(-1)), dim=-1).permute(0, 1, 3, 2)
                 pos_attn_weights = attn_weights[:, :, self.positive_mask==1].sum(2).unsqueeze(2)
                 neg_attn_weights = attn_weights[:, :, self.positive_mask==0].sum(2).unsqueeze(2)
                 self.attn_weights = torch.cat([pos_attn_weights, neg_attn_weights], dim=-2)
+                t = 1
+                image_keys = key[0]
+                
+                global_attention_scores = torch.einsum('hqd,hkd->hqk', valid_encoder_query[0], image_keys).unsqueeze(0)
+                self.global_attn_weights = F.normalize(global_attention_scores, dim=-1).mean(-2)
+                # global_attn_weights.shape = (B, H, 1, K)
+                
+                
                 # print("attn_weights", self.attn_weights.shape)
                 
         # # should we switch from image atten to the text? that makes more sense 

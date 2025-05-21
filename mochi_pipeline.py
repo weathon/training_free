@@ -519,6 +519,7 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
         max_sequence_length: int = 256,
         emphasize_indices = None,
         emphasize_neg_indices = None,
+        negative_guidance_scale = 3.0,
     ):
         r"""
         Function invoked when calling the pipeline for generation.
@@ -776,8 +777,13 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
                 # )[0]
                 
                 # original_pred = noise_pred_uncond + self.guidance_scale * (noise_pred_text - noise_pred_uncond)
-                
-                noise_pred = noise_pred_neg + self.guidance_scale * (noise_pred_text - noise_pred_neg) 
+                negative_map = []
+                for block in self.transformer.transformer_blocks:
+                    negative_map.append(block.attn1.processor.global_attn_weights)
+                negative_map = torch.cat(negative_map, dim=0).mean(dim=(0,1)).reshape(1, noise_pred_text.shape[2], noise_pred_text.shape[3]//2, noise_pred_text.shape[4]//2)
+                negative_map = torch.nn.functional.interpolate(negative_map, size=(noise_pred_text.shape[3], noise_pred_text.shape[4]), mode='bilinear', align_corners=False)
+                negative_map = negative_map * negative_guidance_scale
+                noise_pred = noise_pred_neg + (negative_map + 1) * self.guidance_scale * (noise_pred_text - noise_pred_neg) 
                 # original_norm = torch.linalg.norm(original_pred, dim=1)
                 # negative_pred =  - 1.3 * self.guidance_scale * (noise_pred_neg - noise_pred_uncond)  
                 # # negative_pred =  - (1 + weights * 0.3) * self.guidance_scale * (noise_pred_neg - noise_pred_uncond)  #missed the negative sign, it become all whote 
