@@ -95,6 +95,7 @@ frames = pipe(prompt + base + ("" if random.random()<0.5 else " The animal is sm
             emphasize_neg_indices=(emphasize_neg_start_index, emphasize_neg_end_index),
             generator=torch.manual_seed(19890604),
             negative_guidance_scale=args.negative_guidance_scale,
+            text_weight=1,
             num_frames=37).frames[0]
 # lower guidance scale, blury but camflagued
 export_to_video(frames, f"res/mochi_{file_id:02d}.mp4", fps=30)

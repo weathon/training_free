@@ -520,7 +520,8 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
         emphasize_indices = None,
         emphasize_neg_indices = None,
         negative_guidance_scale = 3.0,
-    ):
+        text_weight = 1.2,
+        ):
         r"""
         Function invoked when calling the pipeline for generation.
 
@@ -647,8 +648,8 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
         )
 
         print(emphasize_indices)
-        prompt_embeds[:, emphasize_indices[0]:emphasize_indices[1], :] = prompt_embeds[:, emphasize_indices[0]:emphasize_indices[1], :]* 1.2
-        negative_prompt_embeds[:, emphasize_neg_indices[0]:emphasize_neg_indices[1], :] = negative_prompt_embeds[:, emphasize_neg_indices[0]:emphasize_neg_indices[1], :]* 1.2
+        prompt_embeds[:, emphasize_indices[0]:emphasize_indices[1], :] = prompt_embeds[:, emphasize_indices[0]:emphasize_indices[1], :] * text_weight
+        negative_prompt_embeds[:, emphasize_neg_indices[0]:emphasize_neg_indices[1], :] = negative_prompt_embeds[:, emphasize_neg_indices[0]:emphasize_neg_indices[1], :] * text_weight
 
         # ( 
         #     prompt_embeds,
