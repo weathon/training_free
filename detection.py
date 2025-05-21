@@ -73,9 +73,9 @@ import torch
 from mochi_pipeline import MochiPipeline
 from diffusers.utils import export_to_video
 import math
-pipe = MochiPipeline.from_pretrained("genmo/mochi-1-preview", torch_dtype=torch.bfloat16).to("cuda")
+pipe = MochiPipeline.from_pretrained("genmo/mochi-1-preview", torch_dtype=torch.bfloat16).to("cuda") #this is bfloat16
 print("Loaded model")
-import os
+import os 
 import wandb
 
 os.environ["TOKENIZERS_PARALLELISM"]="false"
