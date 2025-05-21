@@ -522,6 +522,7 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
         negative_guidance_scale = 3.0,
         text_weight = 1.2,
         triplet = False,
+        start_index = 0,
         ):
         r"""
         Function invoked when calling the pipeline for generation.
@@ -702,13 +703,14 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
             timesteps,
             sigmas,
         )
+        self.scheduler.set_begin_index = start_index
         num_warmup_steps = max(len(timesteps) - num_inference_steps * self.scheduler.order, 0)
         self._num_timesteps = len(timesteps)
 
         self.attention_maps = []
         # 6. Denoising loop
         with self.progress_bar(total=num_inference_steps) as progress_bar:
-            for i, t in enumerate(timesteps):
+            for i, t in enumerate(timesteps[start_index:]):
                 if self.interrupt:
                     continue
 
