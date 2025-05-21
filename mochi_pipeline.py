@@ -708,6 +708,7 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
         self._num_timesteps = len(timesteps)
 
         self.attention_maps = []
+        self.negative_weights = []
         # 6. Denoising loop
         with self.progress_bar(total=num_inference_steps) as progress_bar:
             for i, t in enumerate(timesteps[start_index:]):
@@ -795,7 +796,7 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
                     negative_pred =  - negative_map * self.guidance_scale * (noise_pred_neg - noise_pred_uncond)  
                     noise_pred = original_pred + negative_pred
                     noise_pred = noise_pred / torch.linalg.norm(noise_pred, dim=1) * original_norm
-                    
+                    self.negative_weights.append(negative_map)
                     
                 latents_dtype = latents.dtype
                 latents = self.scheduler.step(noise_pred, t, latents.to(torch.float32), return_dict=False)[0]

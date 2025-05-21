@@ -236,7 +236,8 @@ def compose_frames(frames, maps):
 def repeat_maps(maps, total_len):
     export_maps = []
     for i in range(total_len):
-        export_maps.append(maps[math.ceil((i-2)/6)])
+        idx = min(math.ceil((i-2)/6), len(maps)-1)
+        export_maps.append(maps[idx])
     return export_maps
 
 # print("a")

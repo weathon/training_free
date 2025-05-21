@@ -9,6 +9,7 @@ pipe = MochiPipeline.from_pretrained("genmo/mochi-1-preview", torch_dtype=torch.
 print("Loaded model")
 import os
 import wandb
+from pdb import set_trace as bp
 
 os.environ["TOKENIZERS_PARALLELISM"]="false"
 # Enable memory savings
@@ -82,6 +83,7 @@ import random
 pipe.indices = indices
 pipe.positive_mask = positive_mask
 
+# modify the scheduler?  
 for block in pipe.transformer.transformer_blocks:
     block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=indices, positive_mask=positive_mask) #here start_index + 1, end_index, because exclude the *
     # block.attn1.processor = MochiAttnProcessor2_0(token_index_of_interest=torch.tensor([index])) 
@@ -90,8 +92,8 @@ base = "high quality, 8k, nature, photo realistic, clear lens, in focus"
 
 frames = pipe(prompt + base + ("" if random.random()<0.5 else " The animal is small and far away, making it even harder to see. "),
             negative_prompt=negative_prompt, 
-            num_inference_steps=64,
-            guidance_scale=6,
+            num_inference_steps=32,
+            guidance_scale=6, 
             emphasize_indices=(emphasize_start_index, emphasize_end_index),
             emphasize_neg_indices=(emphasize_neg_start_index, emphasize_neg_end_index),
             generator=torch.manual_seed(19890604),
@@ -144,6 +146,9 @@ extracted_negative_maps = np.array(extracted_negative_maps)
 # extracted_maps = softmax(extracted_maps, axis=0)
 # extracted_positive_maps = extracted_maps[0]
 # extracted_negative_maps = extracted_maps[1]
+
+
+negative_prompt_maps = torch.stack(pipe.negative_weights).cpu().float().numpy().mean(0).mean(0)
 
 
 
@@ -228,10 +233,22 @@ print(fg.max())
 fg = normalize(fg)
 video = compose_frames(frames, fg)
 export_to_video(video, f"res/mochi_fg_{file_id:02d}_map.mp4", fps=30)
+negative_prompt_maps = opening(negative_prompt_maps, kernel_size=3)
+negative_prompt_maps = blur(negative_prompt_maps, kernel_size=3)
+negative_prompt_maps = resize(negative_prompt_maps, size=(frames[0].size[0], frames[0].size[1]))
+negative_prompt_maps = normalize(negative_prompt_maps)
+negative_prompt_maps = repeat_maps(negative_prompt_maps, len(frames))
+negative_prompt_maps = np.clip(negative_prompt_maps, 0, 1)
+
+bp()
+negative_prompt_maps = compose_frames(frames, negative_prompt_maps)
+export_to_video(negative_prompt_maps, f"res/mochi_neg_prompt_{file_id:02d}_map.mp4", fps=30)
+
 wandb.log({
     "video": wandb.Video(f"res/mochi_{file_id:02d}.mp4", caption=filename),
     "fg": wandb.Video(f"res/mochi_fg_{file_id:02d}_map.mp4"),
     "moca": wandb.Image(moca_image),
+    "neg_prompt": wandb.Video(f"res/mochi_neg_prompt_{file_id:02d}_map.mp4"),
 })
 with open("file_id.txt", "w") as f:
     f.write(str(file_id + 1))
