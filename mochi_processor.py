@@ -112,11 +112,13 @@ class MochiAttnProcessor2_0:
                 pos_attn_weights = attn_weights[:, :, self.positive_mask==1].sum(2).unsqueeze(2)
                 neg_attn_weights = attn_weights[:, :, self.positive_mask==0].sum(2).unsqueeze(2)
                 self.attn_weights = torch.cat([pos_attn_weights, neg_attn_weights], dim=-2)
-                t = 1
                 image_keys = key[0]
                 
                 global_attention_scores = torch.einsum('hqd,hkd->hqk', valid_encoder_query[0], image_keys).unsqueeze(0)
-                self.global_attn_weights = F.normalize(global_attention_scores, dim=-1).mean(-2)
+                global_attn_weights = global_attention_scores / math.sqrt(image_keys.size(-1))
+                self.global_attn_weights = global_attn_weights.mean(-2)
+                # print("global_attention_scores", global_attn_weights.abs().mean())
+                # self.global_attn_weights = F.normalize(global_attention_scores, dim=-1).mean(-2)
                 # global_attn_weights.shape = (B, H, 1, K)
                 
                 

@@ -30,6 +30,7 @@ parser = argparse.ArgumentParser(description="Mochi")
 parser.add_argument("--filename", type=str)
 parser.add_argument("--run_id", type=str, default="mochi")
 parser.add_argument("--negative_guidance_scale", type=float, default=3)
+parser.add_argument("--triplet", action="store_true")
 args = parser.parse_args()
 filename = args.filename
 moca_image = os.path.join("original_moca", filename.replace("prompts/","")+".jpg")
@@ -96,6 +97,7 @@ frames = pipe(prompt + base + ("" if random.random()<0.5 else " The animal is sm
             generator=torch.manual_seed(19890604),
             negative_guidance_scale=args.negative_guidance_scale,
             text_weight=1,
+            triplet=args.triplet,
             num_frames=37).frames[0]
 # lower guidance scale, blury but camflagued
 export_to_video(frames, f"res/mochi_{file_id:02d}.mp4", fps=30)

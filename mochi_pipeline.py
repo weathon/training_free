@@ -521,6 +521,7 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
         emphasize_neg_indices = None,
         negative_guidance_scale = 3.0,
         text_weight = 1.2,
+        triplet = False,
         ):
         r"""
         Function invoked when calling the pipeline for generation.
@@ -662,13 +663,13 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
         #     neg_prompt=negative_prompt
         # )
         
-        # uncond_prompt_embeds, uncond_prompt_attention_mask = self._get_t5_prompt_embeds(
-        #     "",
-        #     num_videos_per_prompt=num_videos_per_prompt,
-        #     max_sequence_length=max_sequence_length,
-        #     device=device,
-        #     dtype=prompt_embeds.dtype,
-        # )
+        uncond_prompt_embeds, uncond_prompt_attention_mask = self._get_t5_prompt_embeds(
+            "",
+            num_videos_per_prompt=num_videos_per_prompt,
+            max_sequence_length=max_sequence_length,
+            device=device,
+            dtype=prompt_embeds.dtype,
+        )
         
         # 4. Prepare latent variables
         num_channels_latents = self.transformer.config.in_channels
@@ -765,39 +766,35 @@ class MochiPipeline(DiffusionPipeline, Mochi1LoraLoaderMixin):
                     encoder_attention_mask=negative_prompt_attention_mask,
                     attention_kwargs=attention_kwargs,
                     return_dict=False,
-                )[0]
+                )[0] 
                 # print(uncond_prompt_embeds.shape, uncond_prompt_attention_mask.shape, negative_prompt_embeds.shape, negative_prompt_attention_mask.shape)
-                # print(uncond_prompt_attention_mask, negative_prompt_attention_mask)
-                # noise_pred_uncond = self.transformer(
-                #     hidden_states=latent_model_input,
-                #     encoder_hidden_states=uncond_prompt_embeds,
-                #     timestep=timestep, 
-                #     encoder_attention_mask=uncond_prompt_attention_mask,
-                #     attention_kwargs=attention_kwargs,
-                #     return_dict=False,
-                # )[0]
-                
-                # original_pred = noise_pred_uncond + self.guidance_scale * (noise_pred_text - noise_pred_uncond)
                 negative_map = []
+                # print(uncond_prompt_attention_mask, negative_prompt_attention_mask)
                 for block in self.transformer.transformer_blocks:
                     negative_map.append(block.attn1.processor.global_attn_weights)
                 negative_map = torch.cat(negative_map, dim=0).mean(dim=(0,1)).reshape(1, noise_pred_text.shape[2], noise_pred_text.shape[3]//2, noise_pred_text.shape[4]//2)
                 negative_map = torch.nn.functional.interpolate(negative_map, size=(noise_pred_text.shape[3], noise_pred_text.shape[4]), mode='bilinear', align_corners=False)
                 negative_map = negative_map * negative_guidance_scale
-                noise_pred = noise_pred_neg + (negative_map + 1) * self.guidance_scale * (noise_pred_text - noise_pred_neg) 
-                # original_norm = torch.linalg.norm(original_pred, dim=1)
-                # negative_pred =  - 1.3 * self.guidance_scale * (noise_pred_neg - noise_pred_uncond)  
-                # # negative_pred =  - (1 + weights * 0.3) * self.guidance_scale * (noise_pred_neg - noise_pred_uncond)  #missed the negative sign, it become all whote 
-                # # noise_pred = noise_pred_neg + self.guidance_scale * (noise_pred_text + (1.1 * -noise_pred_neg))
-                # noise_pred = original_pred + negative_pred
-                # noise_pred = noise_pred / torch.linalg.norm(noise_pred, dim=1) * original_norm
-                
-                # clipping or norm, L1 or L2? This is whole tensor, should i do pixel wise similar to pervious adaptive guidance
-                # Mochi CFG + Sampling runs in FP32
-                # noise_pred = noise_pred.to(torch.float32)
-                # print(noise_pred.max(), noise_pred.mean(), noise_pred.std()) 
-                
-                # compute the previous noisy sample x_t -> x_t-1
+                if triplet:
+                    noise_pred_uncond = self.transformer(
+                        hidden_states=latent_model_input,
+                        encoder_hidden_states=uncond_prompt_embeds,
+                        timestep=timestep, 
+                        encoder_attention_mask=uncond_prompt_attention_mask,
+                        attention_kwargs=attention_kwargs,
+                        return_dict=False,
+                    )[0]
+                    
+                if not triplet:
+                    noise_pred = noise_pred_neg + (negative_map + 1) * self.guidance_scale * (noise_pred_text - noise_pred_neg) 
+                else:
+                    original_pred = noise_pred_uncond + self.guidance_scale * (noise_pred_text - noise_pred_uncond)
+                    original_norm = torch.linalg.norm(original_pred, dim=1)
+                    negative_pred =  - negative_map * self.guidance_scale * (noise_pred_neg - noise_pred_uncond)  
+                    noise_pred = original_pred + negative_pred
+                    noise_pred = noise_pred / torch.linalg.norm(noise_pred, dim=1) * original_norm
+                    
+                    
                 latents_dtype = latents.dtype
                 latents = self.scheduler.step(noise_pred, t, latents.to(torch.float32), return_dict=False)[0]
                 # latents = latents.to(torch.float32)
